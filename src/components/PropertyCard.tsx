@@ -1,0 +1,151 @@
+"use client";
+import React from "react";
+import Link from "next/link";
+import { motion } from "framer-motion";
+import {
+  HeartIcon,
+  MapPinIcon,
+  StarIcon,
+  BedIcon,
+  BathIcon,
+  SquareIcon,
+} from "lucide-react";
+import { Property } from "../data/properties";
+interface PropertyCardProps {
+  property: Property;
+  variant?: "grid" | "horizontal";
+}
+export function PropertyCard({
+  property,
+  variant = "grid",
+}: PropertyCardProps) {
+  const formatPrice = (price: number, type: "sale" | "rent") => {
+    if (type === "rent") {
+      return `$${price.toLocaleString()}/mo`;
+    }
+    return `$${(price / 1000).toFixed(0)}K`;
+  };
+  if (variant === "horizontal") {
+    return (
+      <Link href={`/property/${property.id}`}>
+        <motion.div
+          className="bg-white rounded-2xl shadow-sm hover:shadow-lg transition-shadow overflow-hidden min-w-[280px] max-w-[300px]"
+          whileHover={{
+            y: -4,
+          }}
+        >
+          <div className="relative h-36">
+            <img
+              src={property.image}
+              alt={property.name}
+              className="w-full h-full object-cover"
+            />
+
+            <div className="absolute top-3 left-3">
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-semibold ${property.priceType === "sale" ? "bg-blue-500 text-white" : "bg-orange-500 text-white"}`}
+              >
+                FOR {property.priceType === "sale" ? "SALE" : "RENT"}
+              </span>
+            </div>
+            <button className="absolute top-3 right-3 w-9 h-9 bg-white rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors">
+              <HeartIcon className="w-5 h-5 text-slate-600" />
+            </button>
+          </div>
+          <div className="p-3">
+            <h3 className="font-bold text-base text-primary mb-1">
+              {formatPrice(property.price, property.priceType)}
+            </h3>
+            <p className="text-xs text-slate-600 mb-2 truncate">
+              {property.address}
+            </p>
+            <div className="flex items-center space-x-3 text-xs text-slate-500">
+              <div className="flex items-center space-x-1">
+                <BedIcon className="w-4 h-4" />
+                <span>{property.bedrooms} beds</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <BathIcon className="w-4 h-4" />
+                <span>{property.bathrooms} baths</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <SquareIcon className="w-4 h-4" />
+                <span>{property.sqft} sq ft</span>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+      </Link>
+    );
+  }
+  return (
+    <Link href={`/property/${property.id}`}>
+      <motion.div
+        className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all overflow-hidden"
+        whileHover={{
+          y: -8,
+        }}
+        initial={{
+          opacity: 0,
+          y: 20,
+        }}
+        animate={{
+          opacity: 1,
+          y: 0,
+        }}
+      >
+        <div className="relative h-64">
+          <img
+            src={property.image}
+            alt={property.name}
+            className="w-full h-full object-cover"
+          />
+
+          {property.badge && (
+            <div className="absolute top-4 left-4">
+              <span className="px-3 py-1.5 bg-white rounded-full text-xs font-semibold text-accent shadow-md">
+                {property.badge}
+              </span>
+            </div>
+          )}
+          <button className="absolute top-4 right-4 w-10 h-10 bg-white rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors shadow-md">
+            <HeartIcon className="w-5 h-5 text-slate-600" />
+          </button>
+        </div>
+
+        <div className="p-5">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="font-bold text-xl text-primary">{property.name}</h3>
+            <span className="font-bold text-xl text-accent">
+              {formatPrice(property.price, property.priceType)}
+            </span>
+          </div>
+
+          <div className="flex items-center space-x-1 text-sm text-slate-600 mb-3">
+            <MapPinIcon className="w-4 h-4" />
+            <span>{property.location}</span>
+          </div>
+
+          <div className="flex items-center space-x-3 mb-4">
+            <div className="flex items-center space-x-1">
+              <StarIcon className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <span className="text-sm font-semibold text-slate-700">
+                {property.rating}
+              </span>
+            </div>
+            <div className="flex items-center space-x-4 text-sm text-slate-500">
+              <div className="flex items-center space-x-1">
+                <BedIcon className="w-4 h-4" />
+                <span>{property.bedrooms} Bed</span>
+              </div>
+              <div className="flex items-center space-x-1">
+                <BathIcon className="w-4 h-4" />
+                <span>{property.bathrooms} Bath</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    </Link>
+  );
+}
