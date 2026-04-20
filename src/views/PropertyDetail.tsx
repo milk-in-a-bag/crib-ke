@@ -17,11 +17,19 @@ import { SpecsGrid } from "../components/SpecsGrid";
 import { AreaIntelligence } from "../components/AreaIntelligence";
 import { ReviewSection } from "../components/ReviewSection";
 import { ContactPanel } from "../components/ContactPanel";
-import { MapView } from "../components/MapView";
+import dynamic from "next/dynamic";
 import { Footer } from "../components/Footer";
+
+const MapView = dynamic(
+  () => import("../components/MapView").then((m) => m.MapView),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-slate-100 animate-pulse" />,
+  },
+);
 export function PropertyDetail() {
   const params = useParams();
-  const id = params.id as string;
+  const id = params?.id as string;
   const router = useRouter();
   const property = properties.find((p) => p.id === id);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);

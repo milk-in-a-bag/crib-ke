@@ -1,4 +1,4 @@
-import { PropertyDetail } from "@/pages/PropertyDetail";
+import { PropertyDetail } from "@/views/PropertyDetail";
 
 export default function Page() {
   return <PropertyDetail />;

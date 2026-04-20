@@ -1,11 +1,19 @@
 "use client";
 import React, { useState } from "react";
+import dynamic from "next/dynamic";
 import { FilterSidebar } from "../components/FilterSidebar";
-import { MapView } from "../components/MapView";
 import { PropertyCard } from "../components/PropertyCard";
 import { properties } from "../data/properties";
 import { ChevronDownIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
 import { AnimatePresence, motion } from "framer-motion";
+
+const MapView = dynamic(
+  () => import("../components/MapView").then((m) => m.MapView),
+  {
+    ssr: false,
+    loading: () => <div className="w-full h-full bg-slate-100 animate-pulse" />,
+  },
+);
 export function Explore() {
   const [searchType, setSearchType] = useState<"buy" | "rent">("buy");
   const [sortBy, setSortBy] = useState("relevance");
