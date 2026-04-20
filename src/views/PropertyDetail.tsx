@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
@@ -12,13 +12,13 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import { properties } from "../data/properties";
-import { reviews } from "../data/reviews";
 import { SpecsGrid } from "../components/SpecsGrid";
 import { AreaIntelligence } from "../components/AreaIntelligence";
 import { ReviewSection } from "../components/ReviewSection";
 import { ContactPanel } from "../components/ContactPanel";
 import dynamic from "next/dynamic";
 import { Footer } from "../components/Footer";
+import { DbReview } from "../types/index";
 
 const MapView = dynamic(
   () => import("../components/MapView").then((m) => m.MapView),
@@ -33,10 +33,21 @@ export function PropertyDetail() {
   const router = useRouter();
   const property = properties.find((p) => p.id === id);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [dbReviews, setDbReviews] = useState<DbReview[]>([]);
+
+  useEffect(() => {
+    if (!id) return;
+    fetch(`/api/reviews?target_type=property&target_id=${id}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (json?.data) setDbReviews(json.data);
+      })
+      .catch(() => {});
+  }, [id]);
+
   if (!property) {
     return <div className="p-8 text-center">Property not found</div>;
   }
-  const propertyReviews = reviews.filter((r) => r.propertyId === property.id);
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % property.images.length);
   };
@@ -185,7 +196,7 @@ export function PropertyDetail() {
           <AreaIntelligence data={property.areaIntelligence} />
         </motion.div>
 
-        {propertyReviews.length > 0 && (
+        {dbReviews.length > 0 && (
           <motion.div
             className="mb-6 sm:mb-8"
             initial={{
@@ -201,7 +212,7 @@ export function PropertyDetail() {
             }}
           >
             <ReviewSection
-              reviews={propertyReviews}
+              reviews={dbReviews}
               overallRating={property.rating}
               reviewCount={property.reviewCount}
             />

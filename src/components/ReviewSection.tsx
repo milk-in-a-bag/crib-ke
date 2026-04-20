@@ -1,32 +1,78 @@
 "use client";
-import React from "react";
+import React, { useState } from "react";
 import {
   StarIcon,
-  CheckCircleIcon,
-  XCircleIcon,
   ThumbsUpIcon,
   BadgeCheckIcon,
+  UserCircleIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import { Review } from "../data/reviews";
+import { DbReview } from "../types/index";
+
 interface ReviewSectionProps {
-  reviews: Review[];
-  overallRating: number;
-  reviewCount: number;
+  readonly reviews: DbReview[];
+  readonly overallRating: number;
+  readonly reviewCount: number;
 }
+
+function formatDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+  });
+}
+
 export function ReviewSection({
   reviews,
   overallRating,
   reviewCount,
 }: ReviewSectionProps) {
-  const allPros = Array.from(new Set(reviews.flatMap((r) => r.pros))).slice(
-    0,
-    4,
+  const [helpfulCounts, setHelpfulCounts] = useState<Record<string, number>>(
+    () => Object.fromEntries(reviews.map((r) => [r.id, r.helpful_count ?? 0])),
   );
-  const allCons = Array.from(new Set(reviews.flatMap((r) => r.cons))).slice(
-    0,
-    3,
+  const [helpfulClicked, setHelpfulClicked] = useState<Record<string, boolean>>(
+    {},
   );
+
+  async function handleHelpful(reviewId: string) {
+    if (helpfulClicked[reviewId]) return;
+    // Optimistic update
+    setHelpfulCounts((prev) => ({
+      ...prev,
+      [reviewId]: (prev[reviewId] ?? 0) + 1,
+    }));
+    setHelpfulClicked((prev) => ({ ...prev, [reviewId]: true }));
+
+    try {
+      const res = await fetch(`/api/reviews/${reviewId}/helpful`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const json = await res.json();
+        setHelpfulCounts((prev) => ({
+          ...prev,
+          [reviewId]: json.data?.helpful_count ?? prev[reviewId],
+        }));
+      } else {
+        // Revert on failure
+        setHelpfulCounts((prev) => ({
+          ...prev,
+          [reviewId]: (prev[reviewId] ?? 1) - 1,
+        }));
+        setHelpfulClicked((prev) => ({ ...prev, [reviewId]: false }));
+      }
+    } catch {
+      // Revert on error
+      setHelpfulCounts((prev) => ({
+        ...prev,
+        [reviewId]: (prev[reviewId] ?? 1) - 1,
+      }));
+      setHelpfulClicked((prev) => ({ ...prev, [reviewId]: false }));
+    }
+  }
+
   return (
     <div className="bg-white rounded-2xl p-8 shadow-sm">
       <div className="flex items-center space-x-3 mb-6">
@@ -42,49 +88,14 @@ export function ReviewSection({
             {overallRating}
           </div>
           <div className="flex items-center justify-center sm:justify-start mb-1">
-            {[...Array(5)].map((_, i) => (
+            {[...new Array(5)].map((_, i) => (
               <StarIcon
-                key={i}
+                key={`overall-star-${i}`}
                 className={`w-5 h-5 ${i < Math.floor(overallRating) ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
               />
             ))}
           </div>
           <div className="text-sm text-slate-500">{reviewCount} reviews</div>
-        </div>
-
-        <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <div className="font-semibold text-sm text-slate-700 mb-2">
-              Top Pros
-            </div>
-            <div className="space-y-1">
-              {allPros.map((pro, i) => (
-                <div
-                  key={i}
-                  className="flex items-center space-x-2 text-sm text-emerald-600"
-                >
-                  <CheckCircleIcon className="w-4 h-4" />
-                  <span>{pro}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-          <div>
-            <div className="font-semibold text-sm text-slate-700 mb-2">
-              Common Cons
-            </div>
-            <div className="space-y-1">
-              {allCons.map((con, i) => (
-                <div
-                  key={i}
-                  className="flex items-center space-x-2 text-sm text-rose-600"
-                >
-                  <XCircleIcon className="w-4 h-4" />
-                  <span>{con}</span>
-                </div>
-              ))}
-            </div>
-          </div>
         </div>
       </div>
 
@@ -93,57 +104,58 @@ export function ReviewSection({
           <motion.div
             key={review.id}
             className="border-b border-slate-200 pb-6 last:border-0"
-            initial={{
-              opacity: 0,
-              y: 20,
-            }}
-            animate={{
-              opacity: 1,
-              y: 0,
-            }}
-            transition={{
-              delay: index * 0.1,
-            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.1 }}
           >
             <div className="flex items-start space-x-4">
-              <img
-                src={review.avatar}
-                alt={review.author}
-                className="w-12 h-12 rounded-full"
-              />
+              {review.author_avatar ? (
+                <img
+                  src={review.author_avatar}
+                  alt={review.author_name ?? "Reviewer"}
+                  className="w-12 h-12 rounded-full object-cover"
+                />
+              ) : (
+                <UserCircleIcon className="w-12 h-12 text-slate-300 shrink-0" />
+              )}
 
               <div className="flex-1">
                 <div className="flex items-center justify-between mb-2">
                   <div>
                     <div className="flex items-center space-x-2">
                       <span className="font-semibold text-primary">
-                        {review.author}
+                        {review.author_name ?? "Anonymous"}
                       </span>
-                      {review.verified && (
+                      {review.verified_tenant && (
                         <BadgeCheckIcon className="w-4 h-4 text-emerald-500" />
                       )}
                     </div>
                     <div className="flex items-center space-x-2 text-xs text-slate-500">
-                      <span>Verified Tenant</span>
-                      {review.tenureYears && (
-                        <span>• Lived here {review.tenureYears}+ years</span>
-                      )}
-                      <span>• {review.date}</span>
+                      {review.verified_tenant && <span>Verified Tenant</span>}
+                      <span>• {formatDate(review.created_at)}</span>
                     </div>
                   </div>
                   <div className="flex items-center space-x-1">
-                    {[...Array(5)].map((_, i) => (
+                    {[...new Array(5)].map((_, i) => (
                       <StarIcon
-                        key={i}
+                        key={`review-star-${review.id}-${i}`}
                         className={`w-4 h-4 ${i < review.rating ? "fill-amber-400 text-amber-400" : "text-slate-300"}`}
                       />
                     ))}
                   </div>
                 </div>
-                <p className="text-slate-700 mb-3">{review.text}</p>
-                <button className="flex items-center space-x-2 text-sm text-slate-500 hover:text-accent transition-colors">
+                <p className="text-slate-700 mb-3">{review.comment}</p>
+                <button
+                  onClick={() => handleHelpful(review.id)}
+                  disabled={helpfulClicked[review.id]}
+                  className={`flex items-center space-x-2 text-sm transition-colors ${
+                    helpfulClicked[review.id]
+                      ? "text-accent cursor-default"
+                      : "text-slate-500 hover:text-accent"
+                  }`}
+                >
                   <ThumbsUpIcon className="w-4 h-4" />
-                  <span>Helpful ({review.helpful})</span>
+                  <span>Helpful ({helpfulCounts[review.id] ?? 0})</span>
                 </button>
               </div>
             </div>
