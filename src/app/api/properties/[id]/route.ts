@@ -161,63 +161,65 @@ export async function PUT(
     let idx = 1;
 
     if (d.title !== undefined) {
-      setClauses.push(`title = $${idx++}`);
+      setClauses.push("title = $" + idx++);
       updateParams.push(d.title);
     }
     if (d.description !== undefined) {
-      setClauses.push(`description = $${idx++}`);
+      setClauses.push("description = $" + idx++);
       updateParams.push(d.description);
     }
     if (d.price !== undefined) {
-      setClauses.push(`price = $${idx++}`);
+      setClauses.push("price = $" + idx++);
       updateParams.push(d.price);
     }
     if (d.price_type !== undefined) {
-      setClauses.push(`price_type = $${idx++}::price_type`);
+      setClauses.push("price_type = $" + idx++ + "::price_type");
       updateParams.push(d.price_type);
     }
     if (d.type !== undefined) {
-      setClauses.push(`type = $${idx++}::property_type`);
+      setClauses.push("type = $" + idx++ + "::property_type");
       updateParams.push(d.type);
     }
     if (d.location !== undefined) {
-      setClauses.push(`location = $${idx++}`);
+      setClauses.push("location = $" + idx++);
       updateParams.push(d.location);
     }
     if (d.neighborhood !== undefined) {
-      setClauses.push(`neighborhood = $${idx++}`);
+      setClauses.push("neighborhood = $" + idx++);
       updateParams.push(d.neighborhood);
     }
     if (d.latitude !== undefined) {
-      setClauses.push(`latitude = $${idx++}`);
+      setClauses.push("latitude = $" + idx++);
       updateParams.push(d.latitude);
     }
     if (d.longitude !== undefined) {
-      setClauses.push(`longitude = $${idx++}`);
+      setClauses.push("longitude = $" + idx++);
       updateParams.push(d.longitude);
     }
     if (d.bedrooms !== undefined) {
-      setClauses.push(`bedrooms = $${idx++}`);
+      setClauses.push("bedrooms = $" + idx++);
       updateParams.push(d.bedrooms);
     }
     if (d.bathrooms !== undefined) {
-      setClauses.push(`bathrooms = $${idx++}`);
+      setClauses.push("bathrooms = $" + idx++);
       updateParams.push(d.bathrooms);
     }
     if (d.sqft !== undefined) {
-      setClauses.push(`sqft = $${idx++}`);
+      setClauses.push("sqft = $" + idx++);
       updateParams.push(d.sqft);
     }
     if (d.images !== undefined) {
-      setClauses.push(`images = $${idx++}`);
+      setClauses.push("images = $" + idx++);
       updateParams.push(d.images);
     }
     if (d.amenities !== undefined) {
-      setClauses.push(`amenities = $${idx++}`);
+      setClauses.push("amenities = $" + idx++);
       updateParams.push(d.amenities);
     }
     if (d.availability_status !== undefined) {
-      setClauses.push(`availability_status = $${idx++}::availability_status`);
+      setClauses.push(
+        "availability_status = $" + idx++ + "::availability_status",
+      );
       updateParams.push(d.availability_status);
     }
 

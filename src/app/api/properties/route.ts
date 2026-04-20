@@ -58,29 +58,30 @@ export async function GET(request: NextRequest) {
     let idx = 1;
 
     if (q) {
+      const p = "$" + idx;
       conditions.push(
-        `(p.location ILIKE $${idx} OR p.neighborhood ILIKE $${idx} OR p.title ILIKE $${idx})`,
+        `(p.location ILIKE ${p} OR p.neighborhood ILIKE ${p} OR p.title ILIKE ${p})`,
       );
       params.push(`%${q}%`);
       idx++;
     }
     if (minPrice !== null && !Number.isNaN(minPrice)) {
-      conditions.push(`p.price >= $${idx}`);
+      conditions.push("p.price >= $" + idx);
       params.push(minPrice);
       idx++;
     }
     if (maxPrice !== null && !Number.isNaN(maxPrice)) {
-      conditions.push(`p.price <= $${idx}`);
+      conditions.push("p.price <= $" + idx);
       params.push(maxPrice);
       idx++;
     }
     if (type) {
-      conditions.push(`p.type = $${idx}::property_type`);
+      conditions.push("p.type = $" + idx + "::property_type");
       params.push(type);
       idx++;
     }
     if (amenities && amenities.length > 0) {
-      conditions.push(`p.amenities @> $${idx}::text[]`);
+      conditions.push("p.amenities @> $" + idx + "::text[]");
       params.push(amenities);
       idx++;
     }
@@ -114,8 +115,8 @@ export async function GET(request: NextRequest) {
     const total = Number(countResult[0]?.total ?? 0);
 
     // Data query — lean PropertyListItem shape
-    const limitIdx = idx;
-    const offsetIdx = idx + 1;
+    const limitIdx = "$" + idx;
+    const offsetIdx = "$" + (idx + 1);
     const rows = await sql.query(
       `SELECT
          p.id, p.title, p.price, p.price_type, p.type,
@@ -131,7 +132,7 @@ export async function GET(request: NextRequest) {
        WHERE ${whereClause}
        GROUP BY p.id, a.safety_score, a.commute_score
        ORDER BY ${orderClause}
-       LIMIT $${limitIdx} OFFSET $${offsetIdx}`,
+       LIMIT ${limitIdx} OFFSET ${offsetIdx}`,
       [...params, pageSize, offset],
     );
 

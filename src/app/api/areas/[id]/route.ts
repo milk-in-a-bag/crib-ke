@@ -92,27 +92,27 @@ export async function PUT(
     let idx = 1;
 
     if (d.safety_score !== undefined) {
-      setClauses.push(`safety_score = $${idx++}`);
+      setClauses.push("safety_score = $" + idx++);
       values.push(d.safety_score);
     }
     if (d.water_score !== undefined) {
-      setClauses.push(`water_score = $${idx++}`);
+      setClauses.push("water_score = $" + idx++);
       values.push(d.water_score);
     }
     if (d.commute_score !== undefined) {
-      setClauses.push(`commute_score = $${idx++}`);
+      setClauses.push("commute_score = $" + idx++);
       values.push(d.commute_score);
     }
     if (d.internet_score !== undefined) {
-      setClauses.push(`internet_score = $${idx++}`);
+      setClauses.push("internet_score = $" + idx++);
       values.push(d.internet_score);
     }
     if (d.flooding_score !== undefined) {
-      setClauses.push(`flooding_score = $${idx++}`);
+      setClauses.push("flooding_score = $" + idx++);
       values.push(d.flooding_score);
     }
     if (d.summary !== undefined) {
-      setClauses.push(`summary = $${idx++}`);
+      setClauses.push("summary = $" + idx++);
       values.push(d.summary);
     }
 

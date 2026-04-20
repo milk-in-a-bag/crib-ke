@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
         ${name},
         ${phone},
         ${message},
-        ${userId}::uuid
+        ${userId}
       )
       RETURNING id, property_id, name, phone, message, user_id, created_at
     `;
