@@ -246,11 +246,19 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
-    async session({ session, user }) {
+    async jwt({ token, user }) {
       if (user) {
-        session.user.id = user.id;
+        token.id = user.id;
         // @ts-expect-error role is a custom field on our user
-        session.user.role = user.role;
+        token.role = user.role;
+      }
+      return token;
+    },
+    async session({ session, token }) {
+      if (token) {
+        session.user.id = token.id as string;
+        // @ts-expect-error role is a custom field on our user
+        session.user.role = token.role;
       }
       return session;
     },
@@ -260,6 +268,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     newUser: "/auth/signup",
   },
   session: {
-    strategy: "database",
+    strategy: "jwt",
   },
 });
