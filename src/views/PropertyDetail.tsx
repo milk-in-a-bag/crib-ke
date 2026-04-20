@@ -12,6 +12,7 @@ import {
   ChevronRightIcon,
 } from "lucide-react";
 import { properties } from "../data/properties";
+import type { PropertyListItem } from "@/types";
 import { SpecsGrid } from "../components/SpecsGrid";
 import { AreaIntelligence } from "../components/AreaIntelligence";
 import { ReviewSection } from "../components/ReviewSection";
@@ -251,7 +252,24 @@ export function PropertyDetail() {
           }}
         >
           <MapView
-            properties={[property]}
+            properties={[
+              {
+                id: property.id,
+                title: property.name,
+                price: property.price,
+                price_type: property.priceType,
+                type: "studio" as const,
+                location: property.location,
+                neighborhood: property.neighborhood,
+                latitude: property.coordinates[0],
+                longitude: property.coordinates[1],
+                bedrooms: property.bedrooms,
+                bathrooms: property.bathrooms,
+                sqft: property.sqft,
+                images: property.images,
+                availability_status: "available" as const,
+              } satisfies PropertyListItem,
+            ]}
             center={property.coordinates}
             zoom={15}
           />

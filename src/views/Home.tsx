@@ -7,9 +7,29 @@ import { PropertyCard } from "../components/PropertyCard";
 import { TrustBanner } from "../components/TrustBanner";
 import { Footer } from "../components/Footer";
 import { properties } from "../data/properties";
+import type { PropertyListItem } from "@/types";
 import { MapPinIcon, TrendingUpIcon } from "lucide-react";
 export function Home() {
-  const recommendedProperties = properties.slice(0, 6);
+  const recommendedProperties: PropertyListItem[] = properties
+    .slice(0, 6)
+    .map((p) => ({
+      id: p.id,
+      title: p.name,
+      price: p.price,
+      price_type: p.priceType,
+      type: "studio" as const,
+      location: p.location,
+      neighborhood: p.neighborhood,
+      latitude: p.coordinates[0],
+      longitude: p.coordinates[1],
+      bedrooms: p.bedrooms,
+      bathrooms: p.bathrooms,
+      sqft: p.sqft,
+      images: p.images,
+      availability_status: "available" as const,
+      rating: p.rating,
+      review_count: p.reviewCount,
+    }));
   const neighborhoods = [
     {
       name: "Pacific Heights",
