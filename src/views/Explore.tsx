@@ -4,7 +4,28 @@ import dynamic from "next/dynamic";
 import { FilterSidebar } from "../components/FilterSidebar";
 import { PropertyCard } from "../components/PropertyCard";
 import { properties } from "../data/properties";
+import type { PropertyListItem } from "@/types";
 import { ChevronDownIcon, SlidersHorizontalIcon, XIcon } from "lucide-react";
+
+// Adapt legacy static Property shape to PropertyListItem
+const propertyListItems: PropertyListItem[] = properties.map((p) => ({
+  id: p.id,
+  title: p.name,
+  price: p.price,
+  price_type: p.priceType,
+  type: p.type.toLowerCase().replace(" ", "_") as PropertyListItem["type"],
+  location: p.location,
+  neighborhood: p.neighborhood,
+  latitude: p.coordinates[0],
+  longitude: p.coordinates[1],
+  bedrooms: p.bedrooms,
+  bathrooms: p.bathrooms,
+  sqft: p.sqft,
+  images: p.images,
+  availability_status: "available",
+  rating: p.rating,
+  review_count: p.reviewCount,
+}));
 import { AnimatePresence, motion } from "framer-motion";
 
 const MapView = dynamic(
@@ -126,7 +147,7 @@ export function Explore() {
           }}
         >
           <MapView
-            properties={properties}
+            properties={propertyListItems}
             center={[37.7749, -122.4194]}
             zoom={13}
           />
@@ -140,7 +161,7 @@ export function Explore() {
           }}
         >
           <div className="flex space-x-4 pb-2">
-            {properties.map((property) => (
+            {propertyListItems.map((property) => (
               <PropertyCard
                 key={property.id}
                 property={property}
