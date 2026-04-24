@@ -6,6 +6,7 @@ import { formatPrice } from "@/lib/utils";
 import { hasRole } from "@/lib/rbac";
 import type {
   AvailabilityStatus,
+  ListingStatus,
   PriceType,
   PropertyType,
   UserRole,
@@ -20,13 +21,28 @@ interface OwnerListing {
   location: string;
   neighborhood: string;
   availability_status: AvailabilityStatus;
+  listing_status: ListingStatus;
   created_at: string;
 }
 
-const statusColors: Record<AvailabilityStatus, string> = {
+const availabilityColors: Record<AvailabilityStatus, string> = {
   available: "bg-green-100 text-green-800",
   reserved: "bg-yellow-100 text-yellow-800",
   taken: "bg-red-100 text-red-800",
+};
+
+const listingStatusColors: Record<ListingStatus, string> = {
+  draft: "bg-gray-100 text-gray-700",
+  pending_review: "bg-yellow-100 text-yellow-800",
+  published: "bg-green-100 text-green-800",
+  rejected: "bg-red-100 text-red-800",
+};
+
+const listingStatusLabels: Record<ListingStatus, string> = {
+  draft: "Draft",
+  pending_review: "Pending Review",
+  published: "Published",
+  rejected: "Rejected",
 };
 
 const typeLabels: Record<PropertyType, string> = {
@@ -51,7 +67,8 @@ export default async function ListingsPage() {
   }
 
   const rows = await sql`
-    SELECT id, title, price, price_type, type, location, neighborhood, availability_status, created_at
+    SELECT id, title, price, price_type, type, location, neighborhood,
+           availability_status, listing_status, created_at
     FROM properties
     WHERE owner_id = ${session.user.id} AND deleted_at IS NULL
     ORDER BY created_at DESC
@@ -66,6 +83,7 @@ export default async function ListingsPage() {
     location: r.location,
     neighborhood: r.neighborhood,
     availability_status: r.availability_status,
+    listing_status: r.listing_status,
     created_at: r.created_at,
   }));
 
@@ -83,7 +101,7 @@ export default async function ListingsPage() {
             </p>
           </div>
           <Link
-            href="/property/new"
+            href="/dashboard/listings/new"
             className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-semibold rounded-lg transition-colors"
           >
             + Add Listing
@@ -96,7 +114,7 @@ export default async function ListingsPage() {
               No listings yet
             </p>
             <Link
-              href="/property/new"
+              href="/dashboard/listings/new"
               className="text-orange-500 hover:text-orange-600 font-semibold text-sm"
             >
               Create your first listing →
@@ -120,7 +138,10 @@ export default async function ListingsPage() {
                     Location
                   </th>
                   <th className="text-left px-6 py-4 font-semibold text-gray-600 dark:text-gray-300">
-                    Status
+                    Listing Status
+                  </th>
+                  <th className="text-left px-6 py-4 font-semibold text-gray-600 dark:text-gray-300">
+                    Availability
                   </th>
                   <th className="text-left px-6 py-4 font-semibold text-gray-600 dark:text-gray-300">
                     Actions
@@ -152,7 +173,14 @@ export default async function ListingsPage() {
                     </td>
                     <td className="px-6 py-4">
                       <span
-                        className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${statusColors[listing.availability_status]}`}
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold ${listingStatusColors[listing.listing_status]}`}
+                      >
+                        {listingStatusLabels[listing.listing_status]}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span
+                        className={`px-2.5 py-1 rounded-full text-xs font-semibold capitalize ${availabilityColors[listing.availability_status]}`}
                       >
                         {listing.availability_status}
                       </span>
@@ -166,7 +194,7 @@ export default async function ListingsPage() {
                           View
                         </Link>
                         <Link
-                          href={`/property/${listing.id}/edit`}
+                          href={`/dashboard/listings/${listing.id}/edit`}
                           className="text-gray-500 hover:text-gray-700 dark:hover:text-gray-300 font-medium transition-colors"
                         >
                           Edit
