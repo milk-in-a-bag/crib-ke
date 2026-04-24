@@ -1,5 +1,24 @@
 // Enums matching DB
-export type UserRole = "seeker" | "owner" | "agent";
+export type UserRole = "seeker" | "owner" | "agent" | "admin";
+export type ListingStatus =
+  | "draft"
+  | "pending_review"
+  | "published"
+  | "rejected";
+export type NotificationType =
+  | "listing_approved"
+  | "listing_rejected"
+  | "new_inquiry"
+  | "booking_confirmed"
+  | "booking_cancelled"
+  | "booking_rescheduled"
+  | "new_listing_match";
+export type AreaDimension =
+  | "safety"
+  | "water"
+  | "commute"
+  | "internet"
+  | "flooding";
 export type PriceType = "rent" | "sale";
 export type PropertyType =
   | "bedsitter"
@@ -31,6 +50,9 @@ export interface PropertyDetail {
   images: string[];
   amenities: string[];
   availability_status: AvailabilityStatus;
+  listing_status: ListingStatus;
+  published_at?: string;
+  rejection_reason?: string;
   owner_id: string;
   created_at: string;
   // joined
@@ -55,6 +77,9 @@ export interface PropertyListItem {
   sqft: number;
   images: string[];
   availability_status: AvailabilityStatus;
+  listing_status: ListingStatus;
+  published_at?: string;
+  rejection_reason?: string;
   rating?: number;
   review_count?: number;
 }
@@ -120,4 +145,55 @@ export interface SingleResponse<T> {
 export interface ErrorResponse {
   error: string;
   details?: string;
+}
+
+export interface NotificationRecord {
+  id: string;
+  user_id: string;
+  type: NotificationType;
+  title: string;
+  body: string;
+  read: boolean;
+  link?: string;
+  created_at: string;
+}
+
+export interface CommunityRating {
+  id: string;
+  user_id: string;
+  area_id: string;
+  dimension: AreaDimension;
+  value: number;
+  created_at: string;
+}
+
+export interface SearchFilters {
+  q?: string;
+  min_price?: number;
+  max_price?: number;
+  min_price_per_sqft?: number;
+  max_price_per_sqft?: number;
+  type?: PropertyType;
+  price_type?: PriceType;
+  amenities?: string[];
+  bedrooms?: number;
+  bathrooms?: number;
+  radius_km?: number;
+  lat?: number;
+  lng?: number;
+  sort?: "newest" | "price_asc" | "price_desc" | "best_match" | "distance";
+}
+
+export interface SavedSearch {
+  id: string;
+  user_id: string;
+  name: string;
+  filters: SearchFilters;
+  created_at: string;
+}
+
+export interface BookingWithDetails extends BookingRecord {
+  seeker_name: string;
+  seeker_email: string;
+  listing_title: string;
 }
