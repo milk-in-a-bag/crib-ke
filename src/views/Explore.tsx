@@ -100,16 +100,47 @@ export function Explore({
         const mapped = typeMap[filters.types[0]]?.[0];
         if (mapped) overrides.type = mapped;
       }
+      if (filters.minPricePerSqft > 0)
+        overrides.min_price_per_sqft = String(filters.minPricePerSqft);
+      if (filters.maxPricePerSqft > 0)
+        overrides.max_price_per_sqft = String(filters.maxPricePerSqft);
+      if (filters.nearMe && filters.lat !== null && filters.lng !== null) {
+        overrides.lat = String(filters.lat);
+        overrides.lng = String(filters.lng);
+        overrides.radius_km = String(filters.radiusKm);
+        overrides.sort = "distance";
+      }
       fetchProperties(overrides);
     },
     [fetchProperties],
+  );
+
+  const handleSaveSearch = useCallback(
+    async (name: string) => {
+      // Collect current filter state from the last fetch params
+      // We build the filters object from current state
+      const filters = {
+        q: query || undefined,
+        sort: sortBy,
+        price_type: searchType === "rent" ? "rent" : "sale",
+      };
+      await fetch("/api/saved-searches", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, filters }),
+      });
+    },
+    [query, sortBy, searchType],
   );
 
   return (
     <div className="flex h-[calc(100vh-64px)] relative">
       {/* Desktop sidebar - always visible */}
       <div className="hidden lg:block shrink-0">
-        <FilterSidebar onFilterChange={handleFilterChange} />
+        <FilterSidebar
+          onFilterChange={handleFilterChange}
+          onSaveSearch={handleSaveSearch}
+        />
       </div>
 
       {/* Mobile filter overlay */}
@@ -137,7 +168,10 @@ export function Explore({
                 >
                   <XIcon className="w-4 h-4" />
                 </button>
-                <FilterSidebar onFilterChange={handleFilterChange} />
+                <FilterSidebar
+                  onFilterChange={handleFilterChange}
+                  onSaveSearch={handleSaveSearch}
+                />
               </div>
             </motion.div>
           </>
@@ -186,6 +220,7 @@ export function Explore({
               <option value="price_asc">Price: Low to High</option>
               <option value="price_desc">Price: High to Low</option>
               <option value="best_match">Best Match</option>
+              <option value="distance">Nearest first</option>
             </select>
             <ChevronDownIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>

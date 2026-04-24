@@ -53,6 +53,15 @@ export async function GET(request: NextRequest) {
     const offset = (page - 1) * pageSize;
     const bedrooms = sp.get("bedrooms") ? Number(sp.get("bedrooms")) : null;
     const bathrooms = sp.get("bathrooms") ? Number(sp.get("bathrooms")) : null;
+    const minPricePerSqft = sp.get("min_price_per_sqft")
+      ? Number(sp.get("min_price_per_sqft"))
+      : null;
+    const maxPricePerSqft = sp.get("max_price_per_sqft")
+      ? Number(sp.get("max_price_per_sqft"))
+      : null;
+    const lat = sp.get("lat") ? Number(sp.get("lat")) : null;
+    const lng = sp.get("lng") ? Number(sp.get("lng")) : null;
+    const radiusKm = sp.get("radius_km") ? Number(sp.get("radius_km")) : null;
 
     // Build WHERE clauses dynamically
     const conditions: string[] = [
@@ -114,6 +123,35 @@ export async function GET(request: NextRequest) {
       params.push(bathrooms >= 5 ? 5 : bathrooms);
       idx++;
     }
+    if (minPricePerSqft !== null && !Number.isNaN(minPricePerSqft)) {
+      conditions.push(`p.sqft > 0 AND (p.price::float / p.sqft) >= $${idx}`);
+      params.push(minPricePerSqft);
+      idx++;
+    }
+    if (maxPricePerSqft !== null && !Number.isNaN(maxPricePerSqft)) {
+      conditions.push(`p.sqft > 0 AND (p.price::float / p.sqft) <= $${idx}`);
+      params.push(maxPricePerSqft);
+      idx++;
+    }
+    if (
+      lat !== null &&
+      !Number.isNaN(lat) &&
+      lng !== null &&
+      !Number.isNaN(lng) &&
+      radiusKm !== null &&
+      !Number.isNaN(radiusKm)
+    ) {
+      // Haversine formula inline — returns distance in km
+      conditions.push(`(
+        6371 * acos(
+          cos(radians($${idx})) * cos(radians(p.latitude::float))
+          * cos(radians(p.longitude::float) - radians($${idx + 1}))
+          + sin(radians($${idx})) * sin(radians(p.latitude::float))
+        )
+      ) <= $${idx + 2}`);
+      params.push(lat, lng, radiusKm);
+      idx += 3;
+    }
 
     const whereClause = conditions.join(" AND ");
 
@@ -130,6 +168,20 @@ export async function GET(request: NextRequest) {
         + COALESCE(a.commute_score, 5) * 4
         + EXTRACT(EPOCH FROM (NOW() - p.created_at)) / -86400.0
       ) DESC`;
+    } else if (
+      sort === "distance" &&
+      lat !== null &&
+      !Number.isNaN(lat) &&
+      lng !== null &&
+      !Number.isNaN(lng)
+    ) {
+      orderClause = `(
+        6371 * acos(
+          cos(radians(${lat})) * cos(radians(p.latitude::float))
+          * cos(radians(p.longitude::float) - radians(${lng}))
+          + sin(radians(${lat})) * sin(radians(p.latitude::float))
+        )
+      ) ASC`;
     } else {
       orderClause = "p.created_at DESC";
     }
