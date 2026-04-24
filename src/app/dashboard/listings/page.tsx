@@ -74,17 +74,18 @@ export default async function ListingsPage() {
     ORDER BY created_at DESC
   `;
 
-  const listings: OwnerListing[] = rows.map((r: any) => ({
-    id: r.id,
-    title: r.title,
+  const listings: OwnerListing[] = rows.map((r: Record<string, unknown>) => ({
+    id: r.id as string,
+    title: r.title as string,
     price: Number(r.price),
-    price_type: r.price_type,
-    type: r.type,
-    location: r.location,
-    neighborhood: r.neighborhood,
-    availability_status: r.availability_status,
-    listing_status: r.listing_status,
-    created_at: r.created_at,
+    price_type: r.price_type as OwnerListing["price_type"],
+    type: r.type as OwnerListing["type"],
+    location: r.location as string,
+    neighborhood: r.neighborhood as string,
+    availability_status:
+      r.availability_status as OwnerListing["availability_status"],
+    listing_status: r.listing_status as OwnerListing["listing_status"],
+    created_at: r.created_at as string,
   }));
 
   return (

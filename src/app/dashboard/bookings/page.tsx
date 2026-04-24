@@ -31,17 +31,19 @@ export default async function OwnerBookingsPage() {
     LIMIT 50
   `;
 
-  const bookings: BookingWithDetails[] = rows.map((r: any) => ({
-    id: r.id,
-    user_id: r.user_id,
-    property_id: r.property_id,
-    scheduled_date: r.scheduled_date,
-    status: r.status,
-    created_at: r.created_at,
-    seeker_name: r.seeker_name ?? "Unknown",
-    seeker_email: r.seeker_email ?? "",
-    listing_title: r.listing_title ?? "",
-  }));
+  const bookings: BookingWithDetails[] = rows.map(
+    (r: Record<string, unknown>) => ({
+      id: r.id as string,
+      user_id: r.user_id as string,
+      property_id: r.property_id as string,
+      scheduled_date: r.scheduled_date as string,
+      status: r.status as BookingWithDetails["status"],
+      created_at: r.created_at as string,
+      seeker_name: (r.seeker_name as string) ?? "Unknown",
+      seeker_email: (r.seeker_email as string) ?? "",
+      listing_title: (r.listing_title as string) ?? "",
+    }),
+  );
 
   const pendingCount = bookings.filter((b) => b.status === "pending").length;
 

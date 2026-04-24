@@ -4,6 +4,7 @@ import { sql } from "@/lib/db";
 import { hasRole } from "@/lib/rbac";
 import type { UserRole } from "@/types";
 import { OwnerInbox } from "@/components/OwnerInbox";
+import type { Inquiry } from "@/components/OwnerInbox";
 
 export default async function InboxPage() {
   const session = await auth();
@@ -65,7 +66,7 @@ export default async function InboxPage() {
         </div>
 
         <OwnerInbox
-          initialData={rows as any}
+          initialData={rows as Inquiry[]}
           initialTotal={total}
           initialPage={1}
         />

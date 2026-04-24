@@ -50,8 +50,10 @@ export function AdminReviewCard({ listing, onRemove }: AdminReviewCardProps) {
         throw new Error(body.error ?? "Failed to approve listing");
       }
       onRemove(listing.id);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(
+        err instanceof Error ? err.message : "Failed to approve listing",
+      );
       setLoading(null);
     }
   }
@@ -71,8 +73,8 @@ export function AdminReviewCard({ listing, onRemove }: AdminReviewCardProps) {
         throw new Error(body.error ?? "Failed to reject listing");
       }
       onRemove(listing.id);
-    } catch (err: any) {
-      setError(err.message);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to reject listing");
       setLoading(null);
     }
   }

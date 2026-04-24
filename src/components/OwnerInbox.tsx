@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 
-interface Inquiry {
+export interface Inquiry {
   id: string;
   property_id: string;
   name: string;

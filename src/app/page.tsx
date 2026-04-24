@@ -33,27 +33,28 @@ export default async function Page() {
   `;
 
   const featuredProperties: PropertyListItem[] = propertiesResult.map(
-    (row: any) => ({
-      id: row.id,
-      title: row.title,
-      price: row.price,
-      price_type: row.price_type,
-      type: row.type,
-      location: row.location,
-      neighborhood: row.neighborhood,
-      latitude: Number.parseFloat(row.latitude),
-      longitude: Number.parseFloat(row.longitude),
-      bedrooms: row.bedrooms,
-      bathrooms: row.bathrooms,
-      sqft: row.sqft,
-      images: row.images,
-      availability_status: row.availability_status,
-      listing_status: row.listing_status,
-      published_at: row.published_at ?? undefined,
-      rejection_reason: row.rejection_reason ?? undefined,
-      rating: row.rating ? Number.parseFloat(row.rating) : undefined,
+    (row: Record<string, unknown>) => ({
+      id: row.id as string,
+      title: row.title as string,
+      price: row.price as number,
+      price_type: row.price_type as PropertyListItem["price_type"],
+      type: row.type as PropertyListItem["type"],
+      location: row.location as string,
+      neighborhood: row.neighborhood as string,
+      latitude: Number.parseFloat(row.latitude as string),
+      longitude: Number.parseFloat(row.longitude as string),
+      bedrooms: row.bedrooms as number,
+      bathrooms: row.bathrooms as number,
+      sqft: row.sqft as number,
+      images: row.images as string[],
+      availability_status:
+        row.availability_status as PropertyListItem["availability_status"],
+      listing_status: row.listing_status as PropertyListItem["listing_status"],
+      published_at: (row.published_at as string) ?? undefined,
+      rejection_reason: (row.rejection_reason as string) ?? undefined,
+      rating: row.rating ? Number.parseFloat(row.rating as string) : undefined,
       review_count: row.review_count
-        ? Number.parseInt(row.review_count)
+        ? Number.parseInt(row.review_count as string)
         : undefined,
     }),
   );
@@ -82,17 +83,19 @@ export default async function Page() {
     LIMIT 4
   `;
 
-  const areas: AreaRecord[] = areasResult.map((row: any) => ({
-    id: row.id,
-    name: row.name,
-    safety_score: Number.parseFloat(row.safety_score),
-    water_score: Number.parseFloat(row.water_score),
-    commute_score: Number.parseFloat(row.commute_score),
-    internet_score: Number.parseFloat(row.internet_score),
-    flooding_score: Number.parseFloat(row.flooding_score),
-    summary: row.summary,
-    updated_at: row.updated_at,
-  }));
+  const areas: AreaRecord[] = areasResult.map(
+    (row: Record<string, unknown>) => ({
+      id: row.id as string,
+      name: row.name as string,
+      safety_score: Number.parseFloat(row.safety_score as string),
+      water_score: Number.parseFloat(row.water_score as string),
+      commute_score: Number.parseFloat(row.commute_score as string),
+      internet_score: Number.parseFloat(row.internet_score as string),
+      flooding_score: Number.parseFloat(row.flooding_score as string),
+      summary: row.summary as string,
+      updated_at: row.updated_at as string,
+    }),
+  );
 
   return <Home featuredProperties={featuredProperties} areas={areas} />;
 }

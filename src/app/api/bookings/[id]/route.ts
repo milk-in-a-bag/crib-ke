@@ -189,14 +189,14 @@ export async function PATCH(
   }
 }
 
-function mapBooking(row: any): BookingRecord {
+function mapBooking(row: Record<string, unknown>): BookingRecord {
   return {
-    id: row.id,
-    user_id: row.user_id,
-    property_id: row.property_id,
-    scheduled_date: row.scheduled_date,
-    status: row.status,
-    created_at: row.created_at,
+    id: row.id as string,
+    user_id: row.user_id as string,
+    property_id: row.property_id as string,
+    scheduled_date: row.scheduled_date as string,
+    status: row.status as BookingStatus,
+    created_at: row.created_at as string,
   };
 }
 

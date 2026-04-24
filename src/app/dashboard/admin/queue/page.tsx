@@ -37,18 +37,20 @@ export default async function AdminQueuePage() {
     ORDER BY p.created_at ASC
   `;
 
-  const listings: AdminQueueListing[] = rows.map((r: any) => ({
-    id: r.id,
-    title: r.title,
-    type: r.type,
-    price: Number(r.price),
-    price_type: r.price_type,
-    neighborhood: r.neighborhood,
-    location: r.location,
-    images: r.images ?? [],
-    owner_name: r.owner_name,
-    created_at: r.created_at,
-  }));
+  const listings: AdminQueueListing[] = rows.map(
+    (r: Record<string, unknown>) => ({
+      id: r.id as string,
+      title: r.title as string,
+      type: r.type as AdminQueueListing["type"],
+      price: Number(r.price),
+      price_type: r.price_type as AdminQueueListing["price_type"],
+      neighborhood: r.neighborhood as string,
+      location: r.location as string,
+      images: (r.images as string[]) ?? [],
+      owner_name: r.owner_name as string,
+      created_at: r.created_at as string,
+    }),
+  );
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">

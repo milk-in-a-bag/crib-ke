@@ -42,8 +42,7 @@ export function PropertyDetail() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
-    Promise.all([
+    void Promise.all([
       fetch(`/api/properties/${id}`).then((r) => (r.ok ? r.json() : null)),
       fetch(`/api/reviews?target_type=property&target_id=${id}`).then((r) =>
         r.ok ? r.json() : null,

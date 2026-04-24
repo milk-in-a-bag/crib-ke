@@ -150,7 +150,7 @@ export function Footer() {
                   href="#"
                   className="text-slate-400 hover:text-white transition-colors text-sm"
                 >
-                  Renter's Guide
+                  Renter&apos;s Guide
                 </a>
               </li>
               <li>

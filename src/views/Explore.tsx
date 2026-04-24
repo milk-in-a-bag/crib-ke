@@ -42,7 +42,6 @@ export function Explore({
 
   const fetchProperties = useCallback(
     async (overrides: Record<string, string> = {}) => {
-      setLoading(true);
       try {
         const params = new URLSearchParams({
           ...(query ? { q: query } : {}),
@@ -50,6 +49,7 @@ export function Explore({
           price_type: searchType === "rent" ? "rent" : "sale",
           ...overrides,
         });
+        setLoading(true);
         const res = await fetch(`/api/properties?${params.toString()}`);
         if (!res.ok) throw new Error("Failed to fetch properties");
         const json: ListResponse<PropertyListItem> = await res.json();
@@ -66,7 +66,8 @@ export function Explore({
 
   // Re-fetch when sort or search type changes
   useEffect(() => {
-    fetchProperties();
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void fetchProperties();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy, searchType]);
 

@@ -75,15 +75,17 @@ export default async function ProfilePage() {
     `,
   ]);
 
-  const bookings: SeekerBooking[] = bookingRows.map((r: any) => ({
-    id: r.id,
-    property_id: r.property_id,
-    scheduled_date: r.scheduled_date,
-    status: r.status,
-    created_at: r.created_at,
-    title: r.title,
-    location: r.location,
-  }));
+  const bookings: SeekerBooking[] = bookingRows.map(
+    (r: Record<string, unknown>) => ({
+      id: r.id as string,
+      property_id: r.property_id as string,
+      scheduled_date: r.scheduled_date as string,
+      status: r.status as string,
+      created_at: r.created_at as string,
+      title: r.title as string,
+      location: r.location as string,
+    }),
+  );
 
   const savedProperties: PropertyListItem[] = (
     savedRows as SavedPropertyRow[]
