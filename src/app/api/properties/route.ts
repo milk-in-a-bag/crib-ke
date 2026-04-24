@@ -177,6 +177,9 @@ export async function GET(request: NextRequest) {
       sqft: row.sqft,
       images: row.images ?? [],
       availability_status: row.availability_status,
+      listing_status: row.listing_status,
+      published_at: row.published_at ?? undefined,
+      rejection_reason: row.rejection_reason ?? undefined,
       rating: row.rating ? Number(row.rating) : undefined,
       review_count: row.review_count ?? 0,
     }));
@@ -243,6 +246,9 @@ export async function POST(request: NextRequest) {
       images: row.images ?? [],
       amenities: row.amenities ?? [],
       availability_status: row.availability_status,
+      listing_status: row.listing_status,
+      published_at: row.published_at ?? undefined,
+      rejection_reason: row.rejection_reason ?? undefined,
       owner_id: row.owner_id,
       created_at: row.created_at,
     };

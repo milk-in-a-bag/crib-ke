@@ -5,6 +5,7 @@ import { PropertyCard } from "@/components/PropertyCard";
 import type {
   PropertyListItem,
   AvailabilityStatus,
+  ListingStatus,
   PriceType,
   PropertyType,
 } from "@/types";
@@ -33,6 +34,7 @@ interface SavedPropertyRow {
   bathrooms: number;
   images: string[];
   availability_status: AvailabilityStatus;
+  listing_status: ListingStatus;
 }
 
 function formatDate(dateStr: string): string {
@@ -102,6 +104,7 @@ export default async function ProfilePage() {
     sqft: 0,
     images: r.images ?? [],
     availability_status: r.availability_status,
+    listing_status: r.listing_status ?? "published",
   }));
 
   return (

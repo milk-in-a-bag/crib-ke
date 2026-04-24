@@ -20,6 +20,7 @@ export default async function Page() {
       p.sqft,
       p.images,
       p.availability_status,
+      p.listing_status,
       COALESCE(AVG(r.rating), 0) as rating,
       COUNT(r.id) as review_count
     FROM properties p
@@ -47,6 +48,9 @@ export default async function Page() {
       sqft: row.sqft,
       images: row.images,
       availability_status: row.availability_status,
+      listing_status: row.listing_status,
+      published_at: row.published_at ?? undefined,
+      rejection_reason: row.rejection_reason ?? undefined,
       rating: row.rating ? Number.parseFloat(row.rating) : undefined,
       review_count: row.review_count
         ? Number.parseInt(row.review_count)

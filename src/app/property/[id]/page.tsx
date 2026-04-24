@@ -86,6 +86,9 @@ export default async function Page({ params }: { readonly params: Params }) {
     images: row.images ?? [],
     amenities: row.amenities ?? [],
     availability_status: row.availability_status,
+    listing_status: row.listing_status,
+    published_at: row.published_at ?? undefined,
+    rejection_reason: row.rejection_reason ?? undefined,
     owner_id: row.owner_id,
     created_at: row.created_at,
     area,
@@ -136,6 +139,7 @@ export default async function Page({ params }: { readonly params: Params }) {
     sqft: property.sqft,
     images: property.images,
     availability_status: property.availability_status,
+    listing_status: property.listing_status,
     rating: property.rating,
     review_count: property.review_count,
   };

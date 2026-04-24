@@ -93,6 +93,7 @@ export function PropertyDetail() {
     sqft: property.sqft,
     images: property.images,
     availability_status: property.availability_status,
+    listing_status: property.listing_status,
     rating: property.rating,
     review_count: property.review_count,
   };
