@@ -8,6 +8,7 @@ import {
   BedIcon,
   BathIcon,
   SquareIcon,
+  BadgeCheckIcon,
 } from "lucide-react";
 import type { PropertyListItem } from "@/types/index";
 import { formatPrice } from "@/lib/utils";
@@ -53,9 +54,16 @@ export function PropertyCard({
             </div>
           </div>
           <div className="p-3">
-            <h3 className="font-bold text-base text-primary mb-1">
-              {formatPrice(property.price, property.price_type)}
-            </h3>
+            <div className="flex items-center gap-1.5 mb-1">
+              <h3 className="font-bold text-base text-primary">
+                {formatPrice(property.price, property.price_type)}
+              </h3>
+              {property.listing_status === "published" && (
+                <span title="Verified">
+                  <BadgeCheckIcon className="w-4 h-4 text-green-500 shrink-0" />
+                </span>
+              )}
+            </div>
             <p className="text-xs text-slate-600 mb-2 truncate">
               {property.neighborhood}, {property.location}
             </p>
@@ -72,6 +80,11 @@ export function PropertyCard({
                 <SquareIcon className="w-4 h-4" />
                 <span>{property.sqft} sq ft</span>
               </div>
+              {property.sqft > 0 && (
+                <span className="text-slate-400">
+                  {(property.price / property.sqft).toFixed(0)} KES/sqft
+                </span>
+              )}
             </div>
           </div>
         </motion.div>
@@ -100,7 +113,16 @@ export function PropertyCard({
 
         <div className="p-5">
           <div className="flex items-center justify-between mb-2">
-            <h3 className="font-bold text-xl text-primary">{property.title}</h3>
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-bold text-xl text-primary">
+                {property.title}
+              </h3>
+              {property.listing_status === "published" && (
+                <span title="Verified">
+                  <BadgeCheckIcon className="w-5 h-5 text-green-500 shrink-0" />
+                </span>
+              )}
+            </div>
             <span className="font-bold text-xl text-accent">
               {formatPrice(property.price, property.price_type)}
             </span>
@@ -129,6 +151,11 @@ export function PropertyCard({
                 <BathIcon className="w-4 h-4" />
                 <span>{property.bathrooms} Bath</span>
               </div>
+              {property.sqft > 0 && (
+                <span className="text-slate-400 text-xs">
+                  {(property.price / property.sqft).toFixed(0)} KES/sqft
+                </span>
+              )}
             </div>
           </div>
         </div>
