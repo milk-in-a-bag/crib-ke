@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { auth } from "@/auth";
+import { requireRole } from "@/lib/rbac";
 import type { AreaRecord } from "@/types";
 
 const updateAreaSchema = z.object({
@@ -56,15 +56,9 @@ export async function PUT(
   { params }: { params: Promise<{ id: string }> },
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    // @ts-expect-error role is a custom field
-    const role = session.user.role as string;
-    if (role !== "admin") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
-    }
+    // Only owners/agents can update area scores (admin role not in MVP schema)
+    const authResult = await requireRole("owner", "agent");
+    if (!authResult.ok) return authResult.response;
 
     const { id } = await params;
 

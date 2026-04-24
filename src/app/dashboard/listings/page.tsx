@@ -3,7 +3,13 @@ import Link from "next/link";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { formatPrice } from "@/lib/utils";
-import type { AvailabilityStatus, PriceType, PropertyType } from "@/types";
+import { hasRole } from "@/lib/rbac";
+import type {
+  AvailabilityStatus,
+  PriceType,
+  PropertyType,
+  UserRole,
+} from "@/types";
 
 interface OwnerListing {
   id: string;
@@ -37,6 +43,11 @@ export default async function ListingsPage() {
   const session = await auth();
   if (!session?.user?.id) {
     redirect("/auth/signin");
+  }
+  // @ts-expect-error role is a custom field
+  const role = session.user.role as UserRole;
+  if (!hasRole(role, "owner", "agent")) {
+    redirect("/dashboard/profile");
   }
 
   const rows = await sql`

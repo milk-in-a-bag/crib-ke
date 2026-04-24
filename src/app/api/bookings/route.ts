@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { auth } from "@/auth";
+import { requireAuth, requireRole } from "@/lib/rbac";
 import type { BookingRecord } from "@/types";
 
 const createBookingSchema = z.object({
@@ -17,23 +17,27 @@ const createBookingSchema = z.object({
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authResult = await requireAuth();
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
 
-    const userId = request.nextUrl.searchParams.get("user_id");
-    if (!userId) {
+    const requestedUserId = request.nextUrl.searchParams.get("user_id");
+    if (!requestedUserId) {
       return Response.json(
         { error: "user_id query param is required" },
         { status: 400 },
       );
     }
 
+    // Seekers can only see their own bookings; owners/agents can see any
+    if (user.role === "seeker" && requestedUserId !== user.id) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const rows = await sql`
       SELECT id, user_id, property_id, scheduled_date, status, created_at
       FROM bookings
-      WHERE user_id = ${userId}::uuid
+      WHERE user_id = ${requestedUserId}::uuid
       ORDER BY created_at DESC
     `;
 
@@ -60,15 +64,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    // @ts-expect-error role is a custom field on our user
-    if (session.user.role !== "seeker") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const authResult = await requireRole("seeker");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
 
     let body: unknown;
     try {
@@ -90,7 +88,7 @@ export async function POST(request: NextRequest) {
     const result = await sql`
       INSERT INTO bookings (user_id, property_id, scheduled_date, status)
       VALUES (
-        ${session.user.id}::uuid,
+        ${user.id}::uuid,
         ${property_id}::uuid,
         ${scheduled_date}::date,
         'pending'

@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { auth } from "@/auth";
+import { requireRole } from "@/lib/rbac";
 import type { PropertyDetail, AreaRecord } from "@/types";
 
 const updatePropertySchema = z.object({
@@ -119,21 +119,19 @@ export async function PUT(
   { params }: { params: Params },
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authResult = await requireRole("owner", "agent");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
 
     const { id } = await params;
 
-    // Verify ownership
     const existing = await sql`
       SELECT owner_id FROM properties WHERE id = ${id}::uuid AND deleted_at IS NULL
     `;
     if (!existing[0]) {
       return Response.json({ error: "Property not found" }, { status: 404 });
     }
-    if (existing[0].owner_id !== session.user.id) {
+    if (existing[0].owner_id !== user.id) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 
@@ -267,21 +265,19 @@ export async function DELETE(
   { params }: { params: Params },
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authResult = await requireRole("owner", "agent");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
 
     const { id } = await params;
 
-    // Verify ownership
     const existing = await sql`
       SELECT owner_id FROM properties WHERE id = ${id}::uuid AND deleted_at IS NULL
     `;
     if (!existing[0]) {
       return Response.json({ error: "Property not found" }, { status: 404 });
     }
-    if (existing[0].owner_id !== session.user.id) {
+    if (existing[0].owner_id !== user.id) {
       return Response.json({ error: "Forbidden" }, { status: 403 });
     }
 

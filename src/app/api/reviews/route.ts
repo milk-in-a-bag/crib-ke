@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { auth } from "@/auth";
+import { requireAuth, requireRole } from "@/lib/rbac";
 import type { DbReview } from "@/types";
 
 const createReviewSchema = z.object({
@@ -66,10 +66,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authResult = await requireRole("seeker");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
 
     let body: unknown;
     try {
@@ -91,7 +90,7 @@ export async function POST(request: NextRequest) {
     const result = await sql`
       INSERT INTO reviews (user_id, target_type, target_id, rating, comment)
       VALUES (
-        ${session.user.id}::uuid,
+        ${user.id}::uuid,
         ${target_type}::review_target_type,
         ${target_id}::uuid,
         ${rating},

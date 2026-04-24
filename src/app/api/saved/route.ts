@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { auth } from "@/auth";
+import { requireRole } from "@/lib/rbac";
 
 const createSavedSchema = z.object({
   property_id: z.string().uuid(),
@@ -9,12 +9,10 @@ const createSavedSchema = z.object({
 
 export async function GET(_request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const userId = session.user.id;
+    const authResult = await requireRole("seeker");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
+    const userId = user.id;
 
     const rows = await sql`
       SELECT
@@ -55,10 +53,9 @@ export async function GET(_request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authResult = await requireRole("seeker");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
 
     let body: unknown;
     try {
@@ -79,7 +76,7 @@ export async function POST(request: NextRequest) {
 
     const result = await sql`
       INSERT INTO saved_properties (user_id, property_id)
-      VALUES (${session.user.id}::uuid, ${property_id}::uuid)
+      VALUES (${user.id}::uuid, ${property_id}::uuid)
       RETURNING id, user_id, property_id, created_at
     `;
 

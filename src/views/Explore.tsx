@@ -47,6 +47,7 @@ export function Explore({
         const params = new URLSearchParams({
           ...(query ? { q: query } : {}),
           sort: sortBy,
+          price_type: searchType === "rent" ? "rent" : "sale",
           ...overrides,
         });
         const res = await fetch(`/api/properties?${params.toString()}`);
@@ -60,46 +61,48 @@ export function Explore({
         setLoading(false);
       }
     },
-    [query, sortBy],
+    [query, sortBy, searchType],
   );
 
   // Re-fetch when sort or search type changes
   useEffect(() => {
     fetchProperties();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sortBy]);
+  }, [sortBy, searchType]);
 
   const handleSearch = () => {
     fetchProperties();
   };
 
-  const handleFilterChange = (filters: FilterState) => {
-    const overrides: Record<string, string> = {};
-    if (filters.minPrice > 0) overrides.min_price = String(filters.minPrice);
-    if (filters.maxPrice > 0 && filters.maxPrice < 2000000)
-      overrides.max_price = String(filters.maxPrice);
-    if (filters.bedrooms > 0) overrides.bedrooms = String(filters.bedrooms);
-    if (filters.bathrooms > 0) overrides.bathrooms = String(filters.bathrooms);
-    // Map sidebar type selections to DB property_type enum values
-    if (filters.types.length > 0) {
-      const typeMap: Record<string, string[]> = {
-        apartment: [
-          "bedsitter",
-          "one_bedroom",
-          "two_bedroom",
-          "three_bedroom",
-          "studio",
-        ],
-        townhouse: ["townhouse"],
-        "single-family": ["three_bedroom"],
-        villa: ["villa"],
-      };
-      // Use the first selected type's first DB mapping
-      const mapped = typeMap[filters.types[0]]?.[0];
-      if (mapped) overrides.type = mapped;
-    }
-    fetchProperties(overrides);
-  };
+  const handleFilterChange = useCallback(
+    (filters: FilterState) => {
+      const overrides: Record<string, string> = {};
+      if (filters.minPrice > 0) overrides.min_price = String(filters.minPrice);
+      if (filters.maxPrice > 0 && filters.maxPrice < 2000000)
+        overrides.max_price = String(filters.maxPrice);
+      if (filters.bedrooms > 0) overrides.bedrooms = String(filters.bedrooms);
+      if (filters.bathrooms > 0)
+        overrides.bathrooms = String(filters.bathrooms);
+      if (filters.types.length > 0) {
+        const typeMap: Record<string, string[]> = {
+          apartment: [
+            "bedsitter",
+            "one_bedroom",
+            "two_bedroom",
+            "three_bedroom",
+            "studio",
+          ],
+          townhouse: ["townhouse"],
+          "single-family": ["three_bedroom"],
+          villa: ["villa"],
+        };
+        const mapped = typeMap[filters.types[0]]?.[0];
+        if (mapped) overrides.type = mapped;
+      }
+      fetchProperties(overrides);
+    },
+    [fetchProperties],
+  );
 
   return (
     <div className="flex h-[calc(100vh-64px)] relative">
@@ -186,20 +189,18 @@ export function Explore({
             <ChevronDownIcon className="w-4 h-4 absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" />
           </div>
 
-          {total > 0 && (
-            <span className="hidden sm:block text-sm text-slate-500 shrink-0">
-              {total} listing{total !== 1 ? "s" : ""}
+          {(total > 0 || loading) && (
+            <span className="hidden sm:flex items-center gap-2 text-sm text-slate-500 shrink-0">
+              {loading && (
+                <span className="w-3.5 h-3.5 border-2 border-orange-400 border-t-transparent rounded-full animate-spin inline-block" />
+              )}
+              {!loading && `${total} listing${total !== 1 ? "s" : ""}`}
             </span>
           )}
         </div>
 
         {/* Map - takes all remaining space */}
         <div className="flex-1 min-h-0 relative" style={{ minHeight: "300px" }}>
-          {loading && (
-            <div className="absolute inset-0 bg-white/60 z-10 flex items-center justify-center">
-              <div className="w-8 h-8 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
-            </div>
-          )}
           <MapView properties={properties} center={NAIROBI_CENTER} zoom={12} />
         </div>
 
@@ -213,7 +214,10 @@ export function Explore({
               No properties found. Try adjusting your filters.
             </div>
           ) : (
-            <div className="flex space-x-4 pb-2">
+            <div
+              className="flex space-x-4 pb-2 transition-opacity duration-200"
+              style={{ opacity: loading ? 0.5 : 1 }}
+            >
               {properties.map((property) => (
                 <PropertyCard
                   key={property.id}

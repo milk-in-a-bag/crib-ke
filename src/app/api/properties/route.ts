@@ -1,7 +1,7 @@
 import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
-import { auth } from "@/auth";
+import { requireRole } from "@/lib/rbac";
 import type { PropertyListItem, PropertyDetail } from "@/types";
 
 const createPropertySchema = z.object({
@@ -39,6 +39,7 @@ export async function GET(request: NextRequest) {
     const minPrice = sp.get("min_price") ? Number(sp.get("min_price")) : null;
     const maxPrice = sp.get("max_price") ? Number(sp.get("max_price")) : null;
     const type = sp.get("type") ?? null;
+    const priceType = sp.get("price_type") ?? null;
     const amenitiesRaw = sp.get("amenities");
     const amenities = amenitiesRaw
       ? amenitiesRaw.split(",").filter(Boolean)
@@ -80,6 +81,11 @@ export async function GET(request: NextRequest) {
     if (type) {
       conditions.push("p.type = $" + idx + "::property_type");
       params.push(type);
+      idx++;
+    }
+    if (priceType === "rent" || priceType === "sale") {
+      conditions.push("p.price_type = $" + idx + "::price_type");
+      params.push(priceType);
       idx++;
     }
     if (amenities && amenities.length > 0) {
@@ -184,15 +190,9 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
-    // @ts-expect-error role is a custom field
-    const role = session.user.role as string;
-    if (role !== "owner" && role !== "agent") {
-      return Response.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const authResult = await requireRole("owner", "agent");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
 
     let body: unknown;
     try {
@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
         ${d.title}, ${d.description ?? null}, ${d.price}, ${d.price_type}::price_type, ${d.type}::property_type,
         ${d.location}, ${d.neighborhood}, ${d.latitude}, ${d.longitude},
         ${d.bedrooms}, ${d.bathrooms}, ${d.sqft ?? null}, ${d.images}, ${d.amenities},
-        ${d.availability_status}::availability_status, ${session.user.id}::uuid
+        ${d.availability_status}::availability_status, ${user.id}::uuid
       )
       RETURNING *
     `;

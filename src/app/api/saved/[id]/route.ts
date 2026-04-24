@@ -1,6 +1,6 @@
 import { type NextRequest } from "next/server";
 import { sql } from "@/lib/db";
-import { auth } from "@/auth";
+import { requireRole } from "@/lib/rbac";
 
 type Params = Promise<{ id: string }>;
 
@@ -9,17 +9,15 @@ export async function DELETE(
   { params }: { params: Params },
 ) {
   try {
-    const session = await auth();
-    if (!session?.user) {
-      return Response.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const authResult = await requireRole("seeker");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
 
     const { id } = await params;
 
-    // Verify the record belongs to the session user before deleting
     const existing = await sql`
       SELECT id FROM saved_properties
-      WHERE id = ${id}::uuid AND user_id = ${session.user.id}::uuid
+      WHERE id = ${id}::uuid AND user_id = ${user.id}::uuid
     `;
 
     if (!existing[0]) {
@@ -31,7 +29,7 @@ export async function DELETE(
 
     await sql`
       DELETE FROM saved_properties
-      WHERE id = ${id}::uuid AND user_id = ${session.user.id}::uuid
+      WHERE id = ${id}::uuid AND user_id = ${user.id}::uuid
     `;
 
     return Response.json({ data: { id } });
