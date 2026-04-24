@@ -75,18 +75,27 @@ export function Explore({
 
   const handleFilterChange = (filters: FilterState) => {
     const overrides: Record<string, string> = {};
-    if (filters.minPrice) overrides.min_price = String(filters.minPrice);
-    if (filters.maxPrice) overrides.max_price = String(filters.maxPrice);
-    if (filters.bedrooms) overrides.bedrooms = String(filters.bedrooms);
-    // Map sidebar type selections to API type param (use first selected)
+    if (filters.minPrice > 0) overrides.min_price = String(filters.minPrice);
+    if (filters.maxPrice > 0 && filters.maxPrice < 2000000)
+      overrides.max_price = String(filters.maxPrice);
+    if (filters.bedrooms > 0) overrides.bedrooms = String(filters.bedrooms);
+    if (filters.bathrooms > 0) overrides.bathrooms = String(filters.bathrooms);
+    // Map sidebar type selections to DB property_type enum values
     if (filters.types.length > 0) {
-      const typeMap: Record<string, string> = {
-        apartment: "one_bedroom",
-        townhouse: "townhouse",
-        "single-family": "three_bedroom",
-        villa: "villa",
+      const typeMap: Record<string, string[]> = {
+        apartment: [
+          "bedsitter",
+          "one_bedroom",
+          "two_bedroom",
+          "three_bedroom",
+          "studio",
+        ],
+        townhouse: ["townhouse"],
+        "single-family": ["three_bedroom"],
+        villa: ["villa"],
       };
-      const mapped = typeMap[filters.types[0]];
+      // Use the first selected type's first DB mapping
+      const mapped = typeMap[filters.types[0]]?.[0];
       if (mapped) overrides.type = mapped;
     }
     fetchProperties(overrides);

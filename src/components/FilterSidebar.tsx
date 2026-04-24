@@ -22,12 +22,12 @@ interface FilterSidebarProps {
 }
 
 export function FilterSidebar({ onFilterChange }: FilterSidebarProps) {
-  const [priceRange, setPriceRange] = useState([1000, 850000]);
-  const [bedrooms, setBedrooms] = useState(4);
-  const [bathrooms, setBathrooms] = useState(2);
+  const [priceRange, setPriceRange] = useState([0, 2000000]);
+  const [bedrooms, setBedrooms] = useState(0);
+  const [bathrooms, setBathrooms] = useState(0);
   const [propertySize, setPropertySize] = useState([0, 5000]);
   const [availability, setAvailability] = useState("ready");
-  const [selectedTypes, setSelectedTypes] = useState<string[]>(["apartment"]);
+  const [selectedTypes, setSelectedTypes] = useState<string[]>([]);
 
   const propertyTypes = [
     { id: "apartment", label: "Apartment", icon: BuildingIcon },
@@ -57,19 +57,19 @@ export function FilterSidebar({ onFilterChange }: FilterSidebarProps) {
   };
 
   const handleReset = () => {
-    setPriceRange([1000, 850000]);
-    setBedrooms(4);
-    setBathrooms(2);
+    setPriceRange([0, 2000000]);
+    setBedrooms(0);
+    setBathrooms(0);
     setPropertySize([0, 5000]);
     setAvailability("ready");
-    setSelectedTypes(["apartment"]);
+    setSelectedTypes([]);
     if (onFilterChange) {
       onFilterChange({
-        types: ["apartment"],
-        minPrice: 1000,
-        maxPrice: 850000,
-        bedrooms: 4,
-        bathrooms: 2,
+        types: [],
+        minPrice: 0,
+        maxPrice: 0,
+        bedrooms: 0,
+        bathrooms: 0,
         minSqft: 0,
         maxSqft: 5000,
       });
@@ -97,13 +97,15 @@ export function FilterSidebar({ onFilterChange }: FilterSidebarProps) {
       <div className="mb-8">
         <h3 className="text-lg font-bold mb-2">Price Range</h3>
         <div className="text-sm text-slate-400 mb-4">
-          KES {priceRange[0].toLocaleString()} - KES{" "}
-          {priceRange[1].toLocaleString()}
+          {priceRange[0] === 0 && priceRange[1] === 2000000
+            ? "Any price"
+            : `KES ${priceRange[0].toLocaleString()} – KES ${priceRange[1].toLocaleString()}`}
         </div>
         <input
           type="range"
-          min="500"
+          min="0"
           max="2000000"
+          step="5000"
           value={priceRange[1]}
           onChange={(e) =>
             setPriceRange([priceRange[0], parseInt(e.target.value)])
@@ -117,29 +119,37 @@ export function FilterSidebar({ onFilterChange }: FilterSidebarProps) {
         <div className="mb-4">
           <div className="text-sm text-slate-400 mb-2">Bedroom</div>
           <div className="flex space-x-2">
-            {[1, 2, 3, 4, "4+"].map((num) => (
-              <button
-                key={num}
-                onClick={() => setBedrooms(typeof num === "number" ? num : 5)}
-                className={`px-4 py-2 rounded-lg transition-all ${bedrooms === (typeof num === "number" ? num : 5) ? "bg-white text-slate-900" : "bg-slate-800 text-slate-400 hover:bg-slate-700"}`}
-              >
-                {num}
-              </button>
-            ))}
+            {["Any", 1, 2, 3, 4, "4+"].map((num) => {
+              const value =
+                num === "Any" ? 0 : typeof num === "number" ? num : 5;
+              return (
+                <button
+                  key={num}
+                  onClick={() => setBedrooms(value)}
+                  className={`px-3 py-2 rounded-lg transition-all text-sm ${bedrooms === value ? "bg-white text-slate-900" : "bg-slate-800 text-slate-400 hover:bg-slate-700"}`}
+                >
+                  {num}
+                </button>
+              );
+            })}
           </div>
         </div>
         <div>
           <div className="text-sm text-slate-400 mb-2">Bathroom</div>
           <div className="flex space-x-2">
-            {[1, 2, 3, 4, "4+"].map((num) => (
-              <button
-                key={num}
-                onClick={() => setBathrooms(typeof num === "number" ? num : 5)}
-                className={`px-4 py-2 rounded-lg transition-all ${bathrooms === (typeof num === "number" ? num : 5) ? "bg-white text-slate-900" : "bg-slate-800 text-slate-400 hover:bg-slate-700"}`}
-              >
-                {num}
-              </button>
-            ))}
+            {["Any", 1, 2, 3, 4, "4+"].map((num) => {
+              const value =
+                num === "Any" ? 0 : typeof num === "number" ? num : 5;
+              return (
+                <button
+                  key={num}
+                  onClick={() => setBathrooms(value)}
+                  className={`px-3 py-2 rounded-lg transition-all text-sm ${bathrooms === value ? "bg-white text-slate-900" : "bg-slate-800 text-slate-400 hover:bg-slate-700"}`}
+                >
+                  {num}
+                </button>
+              );
+            })}
           </div>
         </div>
       </div>

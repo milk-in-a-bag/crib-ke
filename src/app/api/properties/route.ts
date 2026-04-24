@@ -50,6 +50,8 @@ export async function GET(request: NextRequest) {
       Math.max(1, Number(sp.get("page_size") ?? "12")),
     );
     const offset = (page - 1) * pageSize;
+    const bedrooms = sp.get("bedrooms") ? Number(sp.get("bedrooms")) : null;
+    const bathrooms = sp.get("bathrooms") ? Number(sp.get("bathrooms")) : null;
 
     // Build WHERE clauses dynamically
     const conditions: string[] = ["p.deleted_at IS NULL"];
@@ -83,6 +85,24 @@ export async function GET(request: NextRequest) {
     if (amenities && amenities.length > 0) {
       conditions.push("p.amenities @> $" + idx + "::text[]");
       params.push(amenities);
+      idx++;
+    }
+    if (bedrooms !== null && !Number.isNaN(bedrooms)) {
+      if (bedrooms >= 5) {
+        conditions.push("p.bedrooms >= $" + idx);
+      } else {
+        conditions.push("p.bedrooms = $" + idx);
+      }
+      params.push(bedrooms >= 5 ? 5 : bedrooms);
+      idx++;
+    }
+    if (bathrooms !== null && !Number.isNaN(bathrooms)) {
+      if (bathrooms >= 5) {
+        conditions.push("p.bathrooms >= $" + idx);
+      } else {
+        conditions.push("p.bathrooms = $" + idx);
+      }
+      params.push(bathrooms >= 5 ? 5 : bathrooms);
       idx++;
     }
 
