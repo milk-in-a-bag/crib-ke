@@ -6,34 +6,34 @@ import {
   BuildingIcon,
   CastleIcon,
 } from "lucide-react";
-export function FilterSidebar() {
+
+export interface FilterState {
+  types: string[];
+  minPrice: number;
+  maxPrice: number;
+  bedrooms: number;
+  bathrooms: number;
+  minSqft: number;
+  maxSqft: number;
+}
+
+interface FilterSidebarProps {
+  onFilterChange?: (filters: FilterState) => void;
+}
+
+export function FilterSidebar({ onFilterChange }: FilterSidebarProps) {
   const [priceRange, setPriceRange] = useState([1000, 850000]);
   const [bedrooms, setBedrooms] = useState(4);
   const [bathrooms, setBathrooms] = useState(2);
   const [propertySize, setPropertySize] = useState([0, 5000]);
   const [availability, setAvailability] = useState("ready");
   const [selectedTypes, setSelectedTypes] = useState<string[]>(["apartment"]);
+
   const propertyTypes = [
-    {
-      id: "apartment",
-      label: "Apartment",
-      icon: BuildingIcon,
-    },
-    {
-      id: "townhouse",
-      label: "Townhouse",
-      icon: Building2Icon,
-    },
-    {
-      id: "single-family",
-      label: "Single Family",
-      icon: HomeIcon,
-    },
-    {
-      id: "villa",
-      label: "Villa",
-      icon: CastleIcon,
-    },
+    { id: "apartment", label: "Apartment", icon: BuildingIcon },
+    { id: "townhouse", label: "Townhouse", icon: Building2Icon },
+    { id: "single-family", label: "Single Family", icon: HomeIcon },
+    { id: "villa", label: "Villa", icon: CastleIcon },
   ];
 
   const togglePropertyType = (id: string) => {
@@ -41,6 +41,41 @@ export function FilterSidebar() {
       prev.includes(id) ? prev.filter((t) => t !== id) : [...prev, id],
     );
   };
+
+  const handleApply = () => {
+    if (onFilterChange) {
+      onFilterChange({
+        types: selectedTypes,
+        minPrice: priceRange[0],
+        maxPrice: priceRange[1],
+        bedrooms,
+        bathrooms,
+        minSqft: propertySize[0],
+        maxSqft: propertySize[1],
+      });
+    }
+  };
+
+  const handleReset = () => {
+    setPriceRange([1000, 850000]);
+    setBedrooms(4);
+    setBathrooms(2);
+    setPropertySize([0, 5000]);
+    setAvailability("ready");
+    setSelectedTypes(["apartment"]);
+    if (onFilterChange) {
+      onFilterChange({
+        types: ["apartment"],
+        minPrice: 1000,
+        maxPrice: 850000,
+        bedrooms: 4,
+        bathrooms: 2,
+        minSqft: 0,
+        maxSqft: 5000,
+      });
+    }
+  };
+
   return (
     <div className="w-80 bg-slate-900 text-white p-6 h-screen overflow-y-auto">
       <div className="mb-8">
@@ -62,7 +97,8 @@ export function FilterSidebar() {
       <div className="mb-8">
         <h3 className="text-lg font-bold mb-2">Price Range</h3>
         <div className="text-sm text-slate-400 mb-4">
-          ${priceRange[0].toLocaleString()} - ${priceRange[1].toLocaleString()}
+          KES {priceRange[0].toLocaleString()} - KES{" "}
+          {priceRange[1].toLocaleString()}
         </div>
         <input
           type="range"
@@ -112,22 +148,10 @@ export function FilterSidebar() {
         <h3 className="text-lg font-bold mb-4">Availability</h3>
         <div className="space-y-3">
           {[
-            {
-              id: "ready",
-              label: "Ready to move",
-            },
-            {
-              id: "6months",
-              label: "Within 6 months",
-            },
-            {
-              id: "1year",
-              label: "Within 1 year",
-            },
-            {
-              id: "more",
-              label: "More than 1 year",
-            },
+            { id: "ready", label: "Ready to move" },
+            { id: "6months", label: "Within 6 months" },
+            { id: "1year", label: "Within 1 year" },
+            { id: "more", label: "More than 1 year" },
           ].map(({ id, label }) => (
             <label
               key={id}
@@ -141,7 +165,6 @@ export function FilterSidebar() {
                 onChange={(e) => setAvailability(e.target.value)}
                 className="w-4 h-4 accent-orange-500"
               />
-
               <span className="text-sm text-slate-300">{label}</span>
             </label>
           ))}
@@ -164,10 +187,16 @@ export function FilterSidebar() {
       </div>
 
       <div className="flex space-x-3">
-        <button className="flex-1 px-4 py-3 bg-slate-800 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 transition-colors">
+        <button
+          onClick={handleReset}
+          className="flex-1 px-4 py-3 bg-slate-800 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 transition-colors"
+        >
           Reset
         </button>
-        <button className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors">
+        <button
+          onClick={handleApply}
+          className="flex-1 px-4 py-3 bg-orange-500 text-white rounded-xl font-semibold hover:bg-orange-600 transition-colors"
+        >
           Apply
         </button>
       </div>

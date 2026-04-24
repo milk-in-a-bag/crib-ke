@@ -12,7 +12,7 @@ interface MapViewProps {
 
 export function MapView({
   properties,
-  center = [37.7749, -122.4194],
+  center = [-1.2921, 36.8219],
   zoom = 13,
 }: MapViewProps) {
   const mapRef = useRef<HTMLDivElement>(null);

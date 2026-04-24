@@ -255,6 +255,7 @@ export default async function Page({ params }: { readonly params: Params }) {
               photo: "https://i.pravatar.cc/150?img=12",
               responseTime: "Within 2 hours",
             }}
+            propertyId={property.id}
           />
         </div>
 

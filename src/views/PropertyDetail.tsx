@@ -234,7 +234,7 @@ export function PropertyDetail() {
             delay: 0.3,
           }}
         >
-          <ContactPanel agent={property.agent} />
+          <ContactPanel agent={property.agent} propertyId={property.id} />
         </motion.div>
 
         <motion.div
