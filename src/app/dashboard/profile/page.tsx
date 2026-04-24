@@ -10,7 +10,7 @@ import type {
   PropertyType,
 } from "@/types";
 
-interface UpcomingBooking {
+interface SeekerBooking {
   id: string;
   property_id: string;
   scheduled_date: string;
@@ -61,9 +61,7 @@ export default async function ProfilePage() {
       FROM bookings b
       JOIN properties p ON p.id = b.property_id
       WHERE b.user_id = ${userId}
-        AND b.status = 'confirmed'
-        AND b.scheduled_date >= CURRENT_DATE
-      ORDER BY b.scheduled_date ASC
+      ORDER BY b.created_at DESC
     `,
     sql`
       SELECT sp.id, sp.created_at,
@@ -77,7 +75,7 @@ export default async function ProfilePage() {
     `,
   ]);
 
-  const bookings: UpcomingBooking[] = bookingRows.map((r: any) => ({
+  const bookings: SeekerBooking[] = bookingRows.map((r: any) => ({
     id: r.id,
     property_id: r.property_id,
     scheduled_date: r.scheduled_date,
@@ -120,43 +118,62 @@ export default async function ProfilePage() {
           </p>
         </div>
 
-        {/* Upcoming Viewings */}
+        {/* My Bookings */}
         <section>
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-            Upcoming Viewings
+            My Bookings
+            {bookings.length > 0 && (
+              <span className="ml-2 text-sm font-normal text-gray-400">
+                ({bookings.length})
+              </span>
+            )}
           </h2>
 
           {bookings.length === 0 ? (
             <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm px-6 py-12 text-center">
               <p className="text-gray-400 dark:text-gray-500">
-                No upcoming viewings scheduled.
+                No bookings yet.
               </p>
             </div>
           ) : (
             <div className="space-y-3">
-              {bookings.map((booking) => (
-                <div
-                  key={booking.id}
-                  className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm px-6 py-4 flex items-center justify-between"
-                >
-                  <div>
-                    <p className="font-semibold text-gray-900 dark:text-white">
-                      {booking.title}
-                    </p>
-                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
-                      {booking.location}
-                    </p>
+              {bookings.map((booking) => {
+                const statusStyles: Record<string, string> = {
+                  pending: "bg-yellow-100 text-yellow-800",
+                  confirmed: "bg-green-100 text-green-800",
+                  cancelled: "bg-red-100 text-red-800",
+                };
+                const statusLabels: Record<string, string> = {
+                  pending: "Pending",
+                  confirmed: "Confirmed",
+                  cancelled: "Cancelled",
+                };
+                return (
+                  <div
+                    key={booking.id}
+                    className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm px-6 py-4 flex items-center justify-between"
+                  >
+                    <div>
+                      <p className="font-semibold text-gray-900 dark:text-white">
+                        {booking.title}
+                      </p>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-0.5">
+                        {booking.location}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-semibold text-orange-500">
+                        {formatDate(booking.scheduled_date)}
+                      </p>
+                      <span
+                        className={`inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold ${statusStyles[booking.status] ?? "bg-gray-100 text-gray-700"}`}
+                      >
+                        {statusLabels[booking.status] ?? booking.status}
+                      </span>
+                    </div>
                   </div>
-                  <div className="text-right">
-                    <p className="text-sm font-semibold text-orange-500">
-                      {formatDate(booking.scheduled_date)}
-                    </p>
-                    <span className="inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
-                      Confirmed
-                    </span>
-                  </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
         </section>
