@@ -55,7 +55,10 @@ export async function GET(request: NextRequest) {
     const bathrooms = sp.get("bathrooms") ? Number(sp.get("bathrooms")) : null;
 
     // Build WHERE clauses dynamically
-    const conditions: string[] = ["p.deleted_at IS NULL"];
+    const conditions: string[] = [
+      "p.deleted_at IS NULL",
+      "p.listing_status = 'published'",
+    ];
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const params: any[] = [];
     let idx = 1;
@@ -148,7 +151,7 @@ export async function GET(request: NextRequest) {
          p.id, p.title, p.price, p.price_type, p.type,
          p.location, p.neighborhood, p.latitude, p.longitude,
          p.bedrooms, p.bathrooms, p.sqft, p.images,
-         p.availability_status,
+         p.availability_status, p.listing_status, p.published_at, p.rejection_reason,
          ROUND(AVG(r.rating)::numeric, 1) AS rating,
          COUNT(r.id)::int AS review_count,
          a.safety_score, a.commute_score
@@ -218,12 +221,12 @@ export async function POST(request: NextRequest) {
         title, description, price, price_type, type,
         location, neighborhood, latitude, longitude,
         bedrooms, bathrooms, sqft, images, amenities,
-        availability_status, owner_id
+        availability_status, listing_status, owner_id
       ) VALUES (
         ${d.title}, ${d.description ?? null}, ${d.price}, ${d.price_type}::price_type, ${d.type}::property_type,
         ${d.location}, ${d.neighborhood}, ${d.latitude}, ${d.longitude},
         ${d.bedrooms}, ${d.bathrooms}, ${d.sqft ?? null}, ${d.images}, ${d.amenities},
-        ${d.availability_status}::availability_status, ${user.id}::uuid
+        ${d.availability_status}::availability_status, 'draft'::listing_status, ${user.id}::uuid
       )
       RETURNING *
     `;

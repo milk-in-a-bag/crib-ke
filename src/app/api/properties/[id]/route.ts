@@ -297,3 +297,158 @@ export async function DELETE(
     return Response.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Params },
+) {
+  try {
+    const authResult = await requireRole("owner", "agent");
+    if (!authResult.ok) return authResult.response;
+    const { user } = authResult;
+
+    const { id } = await params;
+
+    const existing = await sql`
+      SELECT owner_id, listing_status FROM properties WHERE id = ${id}::uuid AND deleted_at IS NULL
+    `;
+    if (!existing[0]) {
+      return Response.json({ error: "Property not found" }, { status: 404 });
+    }
+    if (existing[0].owner_id !== user.id) {
+      return Response.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    let body: unknown;
+    try {
+      body = await request.json();
+    } catch {
+      return Response.json({ error: "Invalid JSON body" }, { status: 400 });
+    }
+
+    const parsed = updatePropertySchema.safeParse(body);
+    if (!parsed.success) {
+      return Response.json(
+        { error: "Validation failed", details: parsed.error.message },
+        { status: 400 },
+      );
+    }
+
+    const d = parsed.data;
+
+    // Build SET clause dynamically
+    const setClauses: string[] = [];
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const updateParams: any[] = [];
+    let idx = 1;
+
+    if (d.title !== undefined) {
+      setClauses.push("title = $" + idx++);
+      updateParams.push(d.title);
+    }
+    if (d.description !== undefined) {
+      setClauses.push("description = $" + idx++);
+      updateParams.push(d.description);
+    }
+    if (d.price !== undefined) {
+      setClauses.push("price = $" + idx++);
+      updateParams.push(d.price);
+    }
+    if (d.price_type !== undefined) {
+      setClauses.push("price_type = $" + idx++ + "::price_type");
+      updateParams.push(d.price_type);
+    }
+    if (d.type !== undefined) {
+      setClauses.push("type = $" + idx++ + "::property_type");
+      updateParams.push(d.type);
+    }
+    if (d.location !== undefined) {
+      setClauses.push("location = $" + idx++);
+      updateParams.push(d.location);
+    }
+    if (d.neighborhood !== undefined) {
+      setClauses.push("neighborhood = $" + idx++);
+      updateParams.push(d.neighborhood);
+    }
+    if (d.latitude !== undefined) {
+      setClauses.push("latitude = $" + idx++);
+      updateParams.push(d.latitude);
+    }
+    if (d.longitude !== undefined) {
+      setClauses.push("longitude = $" + idx++);
+      updateParams.push(d.longitude);
+    }
+    if (d.bedrooms !== undefined) {
+      setClauses.push("bedrooms = $" + idx++);
+      updateParams.push(d.bedrooms);
+    }
+    if (d.bathrooms !== undefined) {
+      setClauses.push("bathrooms = $" + idx++);
+      updateParams.push(d.bathrooms);
+    }
+    if (d.sqft !== undefined) {
+      setClauses.push("sqft = $" + idx++);
+      updateParams.push(d.sqft);
+    }
+    if (d.images !== undefined) {
+      setClauses.push("images = $" + idx++);
+      updateParams.push(d.images);
+    }
+    if (d.amenities !== undefined) {
+      setClauses.push("amenities = $" + idx++);
+      updateParams.push(d.amenities);
+    }
+    if (d.availability_status !== undefined) {
+      setClauses.push(
+        "availability_status = $" + idx++ + "::availability_status",
+      );
+      updateParams.push(d.availability_status);
+    }
+
+    if (setClauses.length === 0) {
+      return Response.json({ error: "No fields to update" }, { status: 400 });
+    }
+
+    // If the listing is currently published, transition back to pending_review
+    if (existing[0].listing_status === "published") {
+      setClauses.push("listing_status = 'pending_review'::listing_status");
+      setClauses.push("published_at = NULL");
+    }
+
+    updateParams.push(id);
+    const result = await sql.query(
+      `UPDATE properties SET ${setClauses.join(", ")} WHERE id = $${idx}::uuid RETURNING *`,
+      updateParams,
+    );
+
+    const row = result[0];
+    const property: PropertyDetail = {
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      price: row.price,
+      price_type: row.price_type,
+      type: row.type,
+      location: row.location,
+      neighborhood: row.neighborhood,
+      latitude: Number(row.latitude),
+      longitude: Number(row.longitude),
+      bedrooms: row.bedrooms,
+      bathrooms: row.bathrooms,
+      sqft: row.sqft,
+      images: row.images ?? [],
+      amenities: row.amenities ?? [],
+      availability_status: row.availability_status,
+      listing_status: row.listing_status,
+      published_at: row.published_at ?? undefined,
+      rejection_reason: row.rejection_reason ?? undefined,
+      owner_id: row.owner_id,
+      created_at: row.created_at,
+    };
+
+    return Response.json({ data: property });
+  } catch (err) {
+    console.error("PATCH /api/properties/[id] error:", err);
+    return Response.json({ error: "Internal server error" }, { status: 500 });
+  }
+}
