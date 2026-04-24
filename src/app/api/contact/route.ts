@@ -2,6 +2,7 @@ import { type NextRequest } from "next/server";
 import { z } from "zod";
 import { sql } from "@/lib/db";
 import { auth } from "@/auth";
+import { insertNotification } from "@/lib/notifications";
 
 const contactSchema = z.object({
   property_id: z.string().uuid(),
@@ -33,17 +34,41 @@ export async function POST(request: NextRequest) {
     const session = await auth();
     const userId = session?.user?.id ?? null;
 
+    // Look up the listing's owner_id (Requirement 3.3, 3.7)
+    const propertyRows = await sql`
+      SELECT owner_id FROM properties WHERE id = ${property_id}::uuid AND deleted_at IS NULL
+    `;
+    const ownerId: string | null = propertyRows[0]?.owner_id ?? null;
+
     const result = await sql`
-      INSERT INTO contact_inquiries (property_id, name, phone, message, user_id)
+      INSERT INTO contact_inquiries (property_id, name, phone, message, user_id, owner_id)
       VALUES (
         ${property_id}::uuid,
         ${name},
         ${phone},
         ${message},
-        ${userId}
+        ${userId},
+        ${ownerId}
       )
-      RETURNING id, property_id, name, phone, message, user_id, created_at
+      RETURNING id, property_id, name, phone, message, user_id, owner_id, created_at
     `;
+
+    // Fire notification for the owner if one exists (Requirement 3.3)
+    if (ownerId) {
+      // Get listing title for the notification body
+      const titleRows = await sql`
+        SELECT title FROM properties WHERE id = ${property_id}::uuid
+      `;
+      const listingTitle: string = titleRows[0]?.title ?? "your listing";
+
+      await insertNotification(sql, {
+        userId: ownerId,
+        type: "new_inquiry",
+        title: "New inquiry received",
+        body: `${name} sent an inquiry about "${listingTitle}"`,
+        link: `/dashboard/inbox`,
+      });
+    }
 
     return Response.json({ data: result[0] });
   } catch (err) {
