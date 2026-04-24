@@ -1,12 +1,39 @@
 "use client";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { SearchIcon, MapPinIcon } from "lucide-react";
+
 interface SearchBarProps {
   variant?: "hero" | "compact";
+  initialQuery?: string;
+  onSearch?: (query: string) => void;
 }
-export function SearchBar({ variant = "hero" }: SearchBarProps) {
+
+export function SearchBar({
+  variant = "hero",
+  initialQuery = "",
+  onSearch,
+}: SearchBarProps) {
+  const router = useRouter();
   const [searchType, setSearchType] = useState<"buy" | "rent">("buy");
-  const [location, setLocation] = useState("");
+  const [location, setLocation] = useState(initialQuery);
+
+  function handleSearch() {
+    const q = location.trim();
+    if (onSearch) {
+      onSearch(q);
+    } else {
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      const qs = params.size > 0 ? `?${params.toString()}` : "";
+      router.push(`/explore${qs}`);
+    }
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "Enter") handleSearch();
+  }
+
   if (variant === "compact") {
     return (
       <div className="flex items-center space-x-2 bg-white rounded-xl border border-slate-200 px-4 py-2 shadow-sm">
@@ -17,10 +44,12 @@ export function SearchBar({ variant = "hero" }: SearchBarProps) {
           className="flex-1 outline-none text-sm"
           value={location}
           onChange={(e) => setLocation(e.target.value)}
+          onKeyDown={handleKeyDown}
         />
       </div>
     );
   }
+
   return (
     <div className="w-full max-w-3xl px-2 sm:px-0">
       <div className="flex items-center justify-center space-x-2 mb-4">
@@ -48,9 +77,13 @@ export function SearchBar({ variant = "hero" }: SearchBarProps) {
             className="flex-1 outline-none text-slate-900 placeholder-slate-400"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
-        <button className="px-8 py-4 bg-accent text-white font-semibold hover:bg-accent-hover transition-colors flex items-center space-x-2 shrink-0">
+        <button
+          onClick={handleSearch}
+          className="px-8 py-4 bg-accent text-white font-semibold hover:bg-accent-hover transition-colors flex items-center space-x-2 shrink-0"
+        >
           <SearchIcon className="w-5 h-5" />
           <span>Search</span>
         </button>
@@ -66,9 +99,13 @@ export function SearchBar({ variant = "hero" }: SearchBarProps) {
             className="flex-1 outline-none text-slate-900 placeholder-slate-400 text-sm"
             value={location}
             onChange={(e) => setLocation(e.target.value)}
+            onKeyDown={handleKeyDown}
           />
         </div>
-        <button className="w-full py-3.5 bg-accent text-white font-semibold rounded-xl hover:bg-accent-hover transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-accent/30">
+        <button
+          onClick={handleSearch}
+          className="w-full py-3.5 bg-accent text-white font-semibold rounded-xl hover:bg-accent-hover transition-colors flex items-center justify-center space-x-2 shadow-lg shadow-accent/30"
+        >
           <SearchIcon className="w-5 h-5" />
           <span>Search</span>
         </button>
