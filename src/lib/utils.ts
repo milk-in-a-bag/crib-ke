@@ -112,3 +112,13 @@ export function computeBestMatchScore(
     ratingComponent + safetyComponent + commuteComponent + recencyComponent
   );
 }
+
+/**
+ * Returns a Tailwind text colour class for a community score on the 0–10 scale.
+ * green ≥ 7, amber ≥ 4, red < 4  (Requirement 5.9)
+ */
+export function getScoreColor(score: number): string {
+  if (score >= 7) return "text-emerald-500";
+  if (score >= 4) return "text-amber-500";
+  return "text-rose-500";
+}

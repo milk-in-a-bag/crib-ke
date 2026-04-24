@@ -1,5 +1,5 @@
 "use client";
-import React from "react";
+import React, { useEffect, useState } from "react";
 import {
   BrainIcon,
   ClockIcon,
@@ -9,21 +9,25 @@ import {
   WifiIcon,
 } from "lucide-react";
 import { motion } from "framer-motion";
-import type { AreaRecord } from "@/types/index";
+import type { AreaDimension, AreaRecord } from "@/types/index";
 import {
   mapAreaToIntelligenceProps,
   type AreaIntelligenceProps,
 } from "@/lib/utils";
+import { CommunityRatingForm } from "@/components/CommunityRatingForm";
 
 type MappedData = AreaIntelligenceProps["data"];
 
 interface AreaIntelligenceWithRecord {
   area: AreaRecord;
+  /** Pass the authenticated user's id to show the rating form */
+  userId?: string;
   data?: never;
 }
 
 interface AreaIntelligenceWithData {
   data: MappedData;
+  userId?: string;
   area?: never;
 }
 
@@ -31,8 +35,14 @@ type AreaIntelligenceComponentProps =
   | AreaIntelligenceWithRecord
   | AreaIntelligenceWithData;
 
+interface DimensionCount {
+  dimension: AreaDimension;
+  avg: number;
+  count: number;
+}
+
 /** Color thresholds use the 0–100 scale (DB scores * 10).
- *  green ≥ 70, amber ≥ 40, red < 40  (Requirement 5.2)
+ *  green ≥ 70, amber ≥ 40, red < 40
  */
 function getScoreColor(score: number): string {
   if (score >= 70) return "text-emerald-500";
@@ -56,6 +66,40 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
   const internetScore: number | undefined = props.area
     ? Math.round(props.area.internet_score * 10)
     : undefined;
+
+  // Community rating counts per dimension (Requirement 5.6)
+  const [dimensionCounts, setDimensionCounts] = useState<
+    Map<AreaDimension, DimensionCount>
+  >(new Map());
+  const [ratingsKey, setRatingsKey] = useState(0); // bump to re-fetch after submission
+
+  useEffect(() => {
+    if (!props.area?.id) return;
+    const areaId = props.area.id;
+
+    fetch(`/api/community-ratings?area_id=${areaId}`)
+      .then((r) => r.json())
+      .then((json: { data?: DimensionCount[] }) => {
+        const map = new Map<AreaDimension, DimensionCount>();
+        for (const item of json.data ?? []) {
+          map.set(item.dimension, item);
+        }
+        setDimensionCounts(map);
+      })
+      .catch(() => {
+        /* non-critical — silently ignore */
+      });
+  }, [props.area?.id, ratingsKey]);
+
+  function handleRatingsSubmitted() {
+    setRatingsKey((k) => k + 1);
+  }
+
+  function countLabel(dim: AreaDimension): string {
+    const entry = dimensionCounts.get(dim);
+    if (!entry) return "";
+    return `${entry.count} rating${entry.count === 1 ? "" : "s"}`;
+  }
 
   return (
     <div className="bg-white rounded-2xl p-5 sm:p-8 shadow-sm">
@@ -82,6 +126,11 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
                   Commute Score
                 </div>
                 <div className="text-sm text-slate-500">{data.commuteTime}</div>
+                {countLabel("commute") && (
+                  <div className="text-xs text-slate-400">
+                    {countLabel("commute")}
+                  </div>
+                )}
               </div>
             </div>
             <div
@@ -113,6 +162,11 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
                   Water Reliability
                 </div>
                 <div className="text-sm text-slate-500">24/7 availability</div>
+                {countLabel("water") && (
+                  <div className="text-xs text-slate-400">
+                    {countLabel("water")}
+                  </div>
+                )}
               </div>
             </div>
             <div
@@ -146,6 +200,11 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
                 <div className="text-sm text-slate-500">
                   Crime rate &amp; safety
                 </div>
+                {countLabel("safety") && (
+                  <div className="text-xs text-slate-400">
+                    {countLabel("safety")}
+                  </div>
+                )}
               </div>
             </div>
             <div
@@ -178,6 +237,11 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
                   <div className="text-sm text-slate-500">
                     Connectivity quality
                   </div>
+                  {countLabel("internet") && (
+                    <div className="text-xs text-slate-400">
+                      {countLabel("internet")}
+                    </div>
+                  )}
                 </div>
               </div>
               <div
@@ -260,6 +324,16 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
           </div>
         </motion.div>
       </div>
+
+      {/* Community rating form — shown only when an AreaRecord is passed and user is authenticated */}
+      {props.area && props.userId && (
+        <div className="mt-6">
+          <CommunityRatingForm
+            areaId={props.area.id}
+            onSubmitted={handleRatingsSubmitted}
+          />
+        </div>
+      )}
     </div>
   );
 }
