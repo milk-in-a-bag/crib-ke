@@ -31,8 +31,18 @@ export function NavbarClient({
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: session, status } = useSession();
+
+  // Transparent → white on scroll
+  useEffect(() => {
+    function handleScroll() {
+      setScrolled(window.scrollY > 10);
+    }
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
 
   // Close user menu on outside click
   useEffect(() => {
@@ -91,14 +101,26 @@ export function NavbarClient({
   }
 
   return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
+    <nav
+      className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${
+        scrolled
+          ? "bg-white border-slate-200 shadow-sm"
+          : "bg-transparent border-transparent"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           {/* Left: logo + nav links */}
           <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center space-x-2">
-              <HomeIcon className="w-7 h-7 text-accent" />
-              <span className="text-xl font-bold text-primary">CribKE</span>
+              <HomeIcon
+                className={`w-7 h-7 ${scrolled ? "text-accent" : "text-white"}`}
+              />
+              <span
+                className={`text-xl font-bold ${scrolled ? "text-primary" : "text-white"}`}
+              >
+                CribKE
+              </span>
             </Link>
 
             <div className="hidden md:flex items-center space-x-6">
@@ -108,8 +130,12 @@ export function NavbarClient({
                   href={link.href}
                   className={`text-sm font-medium transition-colors ${
                     isActive(link.href)
-                      ? "text-accent"
-                      : "text-slate-600 hover:text-accent"
+                      ? scrolled
+                        ? "text-accent"
+                        : "text-white font-semibold"
+                      : scrolled
+                        ? "text-slate-600 hover:text-accent"
+                        : "text-white/80 hover:text-white"
                   }`}
                 >
                   {link.label}
@@ -123,7 +149,10 @@ export function NavbarClient({
             {/* Notification bell — only for authenticated users */}
             {isAuthenticated && (
               <div className="hidden sm:block">
-                <NotificationPanel initialUnreadCount={initialUnreadCount} />
+                <NotificationPanel
+                  initialUnreadCount={initialUnreadCount}
+                  scrolled={scrolled}
+                />
               </div>
             )}
 
@@ -154,8 +183,12 @@ export function NavbarClient({
                       className="w-9 h-9 rounded-full object-cover ring-2 ring-accent/20"
                     />
                   ) : (
-                    <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-accent">
+                    <div
+                      className={`w-9 h-9 rounded-full flex items-center justify-center ${scrolled ? "bg-accent/10" : "bg-white/20"}`}
+                    >
+                      <span
+                        className={`text-sm font-semibold ${scrolled ? "text-accent" : "text-white"}`}
+                      >
                         {session.user?.name
                           ?.split(" ")
                           .filter(Boolean)

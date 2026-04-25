@@ -19,7 +19,7 @@ export function Home({ featuredProperties, areas }: HomeProps) {
   return (
     <div className="min-h-screen">
       {/* Hero Section with Background Image */}
-      <section className="relative min-h-[520px] md:min-h-[600px] flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
         <img
           src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600"
           alt="Beautiful modern home"
@@ -28,15 +28,7 @@ export function Home({ featuredProperties, areas }: HomeProps) {
 
         <div className="absolute inset-0 bg-gradient-to-b from-slate-900/70 via-slate-900/50 to-slate-900/80" />
 
-        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 text-center">
-          <motion.div
-            className="inline-block px-4 py-1.5 bg-white/15 backdrop-blur-sm rounded-full text-white text-sm font-medium mb-6"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-          >
-            🏡 Trusted by 10,000+ home seekers
-          </motion.div>
-
+        <div className="relative z-10 w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-16 text-center">
           <motion.h1
             className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-extrabold text-white mb-6 leading-tight"
             initial={{ opacity: 0, y: 20 }}

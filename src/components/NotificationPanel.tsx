@@ -19,10 +19,12 @@ function formatRelativeTime(dateStr: string): string {
 
 interface NotificationPanelProps {
   readonly initialUnreadCount: number;
+  readonly scrolled?: boolean;
 }
 
 export function NotificationPanel({
   initialUnreadCount,
+  scrolled = true,
 }: NotificationPanelProps) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
@@ -103,7 +105,7 @@ export function NotificationPanel({
       {/* Bell button */}
       <button
         onClick={handleToggle}
-        className="cursor-pointer p-2 text-slate-600 hover:text-accent transition-colors relative"
+        className={`cursor-pointer p-2 transition-colors relative ${scrolled ? "text-slate-600 hover:text-accent" : "text-white/80 hover:text-white"}`}
         aria-label="Notifications"
       >
         <BellIcon className="w-5 h-5" />
