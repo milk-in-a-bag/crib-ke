@@ -1,245 +1,27 @@
-"use client";
-import React, { useState } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { useSession, signOut } from "next-auth/react";
-import Image from "next/image";
-import {
-  HomeIcon,
-  SearchIcon,
-  BellIcon,
-  UserIcon,
-  MenuIcon,
-  XIcon,
-  LogOutIcon,
-} from "lucide-react";
-import { motion, AnimatePresence } from "framer-motion";
+import { auth } from "@/auth";
+import { sql } from "@/lib/db";
+import type { UserRole } from "@/types";
+import { NavbarClient } from "@/components/NavbarClient";
 
-export function Navbar() {
-  const pathname = usePathname();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [userMenuOpen, setUserMenuOpen] = useState(false);
-  const { data: session, status } = useSession();
-  const isAuthenticated = status === "authenticated";
+export async function Navbar() {
+  const session = await auth();
+  // @ts-expect-error role is a custom field attached in the JWT callback
+  const role = (session?.user?.role as UserRole) ?? null;
+  const userId = session?.user?.id ?? null;
 
-  const isActive = (path: string) => pathname === path;
-  const navLinks = [
-    { href: "/", label: "Find Home" },
-    { href: "/explore", label: "Explore" },
-    { href: "#", label: "Sell Property" },
-    { href: "#", label: "Agents" },
-  ];
+  let unreadCount = 0;
+  if (userId) {
+    try {
+      const result = await sql`
+        SELECT COUNT(*)::int AS cnt
+        FROM notifications
+        WHERE user_id = ${userId}::uuid AND read = FALSE
+      `;
+      unreadCount = result[0]?.cnt ?? 0;
+    } catch {
+      // Non-fatal — badge just shows 0 if DB is unavailable
+    }
+  }
 
-  return (
-    <nav className="sticky top-0 z-50 bg-white border-b border-slate-200 shadow-sm">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          <div className="flex items-center space-x-8">
-            <Link href="/" className="flex items-center space-x-2">
-              <HomeIcon className="w-7 h-7 text-accent" />
-              <span className="text-xl font-bold text-primary">CribKE</span>
-            </Link>
-
-            <div className="hidden md:flex items-center space-x-6">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className={`text-sm font-medium transition-colors ${isActive(link.href) ? "text-accent" : "text-slate-600 hover:text-accent"}`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center space-x-3">
-            <button className="hidden sm:block p-2 text-slate-600 hover:text-accent transition-colors">
-              <SearchIcon className="w-5 h-5" />
-            </button>
-            <button className="hidden sm:block p-2 text-slate-600 hover:text-accent transition-colors relative">
-              <BellIcon className="w-5 h-5" />
-              <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-            </button>
-            <button className="hidden md:flex items-center space-x-2 px-4 py-2 bg-accent text-white rounded-xl font-semibold hover:bg-accent-hover transition-colors">
-              <span>Post Property</span>
-            </button>
-
-            {/* User menu — desktop */}
-            {isAuthenticated ? (
-              <div className="relative hidden sm:block">
-                <button
-                  onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center space-x-2 focus:outline-none"
-                  aria-label="User menu"
-                >
-                  {session.user?.image ? (
-                    <Image
-                      src={session.user.image}
-                      alt={session.user.name ?? "User"}
-                      width={36}
-                      height={36}
-                      className="w-9 h-9 rounded-full object-cover ring-2 ring-accent/20"
-                    />
-                  ) : (
-                    <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center">
-                      <span className="text-sm font-semibold text-accent">
-                        {session.user?.name?.[0]?.toUpperCase() ?? "U"}
-                      </span>
-                    </div>
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {userMenuOpen && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -8 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.15 }}
-                      className="absolute right-0 mt-2 w-52 bg-white rounded-xl shadow-lg border border-slate-100 py-1 z-50"
-                    >
-                      <div className="px-4 py-2 border-b border-slate-100">
-                        <p className="text-sm font-semibold text-slate-800 truncate">
-                          {session.user?.name}
-                        </p>
-                        <p className="text-xs text-slate-500 truncate">
-                          {session.user?.email}
-                        </p>
-                      </div>
-                      <Link
-                        href="/dashboard/profile"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                      >
-                        My Profile
-                      </Link>
-                      <Link
-                        href="/dashboard/listings"
-                        onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-                      >
-                        My Listings
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setUserMenuOpen(false);
-                          signOut({ callbackUrl: "/" });
-                        }}
-                        className="w-full flex items-center space-x-2 px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <LogOutIcon className="w-4 h-4" />
-                        <span>Sign out</span>
-                      </button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            ) : (
-              <Link
-                href="/auth/signin"
-                className="hidden sm:flex w-9 h-9 rounded-full bg-slate-200 items-center justify-center hover:bg-slate-300 transition-colors"
-                aria-label="Sign in"
-              >
-                <UserIcon className="w-5 h-5 text-slate-600" />
-              </Link>
-            )}
-
-            <button
-              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-              className="md:hidden p-2 text-slate-600 hover:text-accent transition-colors"
-              aria-label="Toggle menu"
-            >
-              {mobileMenuOpen ? (
-                <XIcon className="w-6 h-6" />
-              ) : (
-                <MenuIcon className="w-6 h-6" />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* Mobile menu */}
-      <AnimatePresence>
-        {mobileMenuOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="md:hidden overflow-hidden bg-white border-t border-slate-100"
-          >
-            <div className="px-4 py-4 space-y-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-4 py-3 rounded-xl text-base font-medium transition-colors ${isActive(link.href) ? "bg-violet-50 text-accent" : "text-slate-700 hover:bg-slate-50"}`}
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <div className="pt-3 border-t border-slate-100 mt-3">
-                <button className="w-full px-4 py-3 bg-accent text-white rounded-xl font-semibold hover:bg-accent-hover transition-colors">
-                  Post Property
-                </button>
-              </div>
-              <div className="flex items-center justify-between px-4 pt-2">
-                <button className="p-2 text-slate-600 hover:text-accent transition-colors relative">
-                  <BellIcon className="w-5 h-5" />
-                  <span className="absolute top-1 right-1 w-2 h-2 bg-accent rounded-full"></span>
-                </button>
-
-                {isAuthenticated ? (
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center space-x-2">
-                      {session.user?.image ? (
-                        <Image
-                          src={session.user.image}
-                          alt={session.user.name ?? "User"}
-                          width={32}
-                          height={32}
-                          className="w-8 h-8 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-accent/10 flex items-center justify-center">
-                          <span className="text-xs font-semibold text-accent">
-                            {session.user?.name?.[0]?.toUpperCase() ?? "U"}
-                          </span>
-                        </div>
-                      )}
-                      <span className="text-sm font-medium text-slate-700 truncate max-w-[120px]">
-                        {session.user?.name}
-                      </span>
-                    </div>
-                    <button
-                      onClick={() => {
-                        setMobileMenuOpen(false);
-                        signOut({ callbackUrl: "/" });
-                      }}
-                      className="flex items-center space-x-1 text-sm text-red-600 hover:text-red-700"
-                    >
-                      <LogOutIcon className="w-4 h-4" />
-                      <span>Sign out</span>
-                    </button>
-                  </div>
-                ) : (
-                  <Link
-                    href="/auth/signin"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center space-x-2 text-sm font-medium text-slate-700 hover:text-accent"
-                  >
-                    <UserIcon className="w-5 h-5" />
-                    <span>Sign in</span>
-                  </Link>
-                )}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-    </nav>
-  );
+  return <NavbarClient initialUnreadCount={unreadCount} serverRole={role} />;
 }
