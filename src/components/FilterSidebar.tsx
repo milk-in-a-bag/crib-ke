@@ -1,14 +1,9 @@
 "use client";
-import React, { useState, useEffect, useRef } from "react";
-import {
-  HomeIcon,
-  Building2Icon,
-  BuildingIcon,
-  CastleIcon,
-  MapPinIcon,
-  BookmarkIcon,
-  XIcon,
-} from "lucide-react";
+import { useState, useEffect, useRef } from "react";
+import { BookmarkIcon, XIcon } from "lucide-react";
+import { PropertyTypeFilter } from "./filter/PropertyTypeFilter";
+import { RoomFilter } from "./filter/RoomFilter";
+import { NearMeFilter } from "./filter/NearMeFilter";
 
 export interface FilterState {
   types: string[];
@@ -26,7 +21,7 @@ export interface FilterState {
   radiusKm: number;
 }
 
-const DEFAULT_FILTERS: FilterState = {
+export const DEFAULT_FILTERS: FilterState = {
   types: [],
   minPrice: 0,
   maxPrice: 0,
@@ -47,31 +42,16 @@ interface FilterSidebarProps {
   onSaveSearch?: (name: string) => void;
 }
 
-const PROPERTY_TYPES = [
-  { id: "apartment", label: "Apartment", icon: BuildingIcon },
-  { id: "townhouse", label: "Townhouse", icon: Building2Icon },
-  { id: "single-family", label: "Single Family", icon: HomeIcon },
-  { id: "villa", label: "Villa", icon: CastleIcon },
-];
-
-const ROOM_OPTIONS = ["Any", 1, 2, 3, 4, "4+"] as const;
-
-function roomValue(opt: (typeof ROOM_OPTIONS)[number]): number {
-  if (opt === "Any") return 0;
-  if (opt === "4+") return 5;
-  return opt;
-}
-
-function hasActiveFilters(filters: FilterState): boolean {
+function hasActiveFilters(f: FilterState) {
   return (
-    filters.types.length > 0 ||
-    filters.minPrice > 0 ||
-    filters.maxPrice > 0 ||
-    filters.bedrooms > 0 ||
-    filters.bathrooms > 0 ||
-    filters.minPricePerSqft > 0 ||
-    filters.maxPricePerSqft > 0 ||
-    filters.nearMe
+    f.types.length > 0 ||
+    f.minPrice > 0 ||
+    f.maxPrice > 0 ||
+    f.bedrooms > 0 ||
+    f.bathrooms > 0 ||
+    f.minPricePerSqft > 0 ||
+    f.maxPricePerSqft > 0 ||
+    f.nearMe
   );
 }
 
@@ -88,78 +68,58 @@ export function FilterSidebar({
   const [saving, setSaving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isFirstRender = useRef(true);
-  const onFilterChangeRef = useRef(onFilterChange);
-  const onSaveSearchRef = useRef(onSaveSearch);
-
+  const cbRef = useRef(onFilterChange);
+  const saveRef = useRef(onSaveSearch);
   useEffect(() => {
-    onFilterChangeRef.current = onFilterChange;
-    onSaveSearchRef.current = onSaveSearch;
+    cbRef.current = onFilterChange;
+    saveRef.current = onSaveSearch;
   });
 
-  // Notify parent whenever filters change (skip the very first render)
   useEffect(() => {
     if (isFirstRender.current) {
       isFirstRender.current = false;
       return;
     }
-    onFilterChangeRef.current?.(filters);
+    cbRef.current?.(filters);
   }, [filters]);
 
-  // Debounce price slider so we don't fire on every pixel
+  const set = (patch: Partial<FilterState>) =>
+    setFilters((prev) => ({ ...prev, ...patch }));
+
   const handlePriceSlider = (value: number) => {
     setPriceSlider(value);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => {
-      setFilters((prev) => ({
-        ...prev,
-        maxPrice: value >= 2000000 ? 0 : value,
-      }));
-    }, 300);
-  };
-
-  const toggleType = (id: string) => {
-    setFilters((prev) => ({
-      ...prev,
-      types: prev.types.includes(id)
-        ? prev.types.filter((t) => t !== id)
-        : [...prev.types, id],
-    }));
+    debounceRef.current = setTimeout(
+      () => set({ maxPrice: value >= 2000000 ? 0 : value }),
+      300,
+    );
   };
 
   const handleNearMeToggle = () => {
     if (filters.nearMe) {
-      // Turn off
-      setFilters((prev) => ({
-        ...prev,
-        nearMe: false,
-        lat: null,
-        lng: null,
-      }));
+      set({ nearMe: false, lat: null, lng: null });
       setGeoError(null);
       return;
     }
-
     if (!navigator.geolocation) {
       setGeoError("Geolocation is not supported by your browser.");
       return;
     }
-
     setGeoLoading(true);
     setGeoError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         setGeoLoading(false);
-        setFilters((prev) => ({
-          ...prev,
+        set({
           nearMe: true,
           lat: pos.coords.latitude,
           lng: pos.coords.longitude,
-        }));
+        });
       },
       () => {
         setGeoLoading(false);
         setGeoError(
-          'Location access is required for the "Near me" feature. Please allow location access in your browser and try again.',
+          'Location access is required for the "Near me" feature. Please allow location access and try again.',
         );
       },
     );
@@ -169,7 +129,7 @@ export function FilterSidebar({
     if (!saveName.trim()) return;
     setSaving(true);
     try {
-      await onSaveSearchRef.current?.(saveName.trim());
+      saveRef.current?.(saveName.trim());
       setShowSaveInput(false);
       setSaveName("");
     } finally {
@@ -188,32 +148,20 @@ export function FilterSidebar({
   const priceLabel =
     priceSlider >= 2000000
       ? "Any price"
-      : `KES ${(0).toLocaleString()} – KES ${priceSlider.toLocaleString()}`;
-
-  const active = hasActiveFilters(filters);
+      : `KES 0 – KES ${priceSlider.toLocaleString()}`;
 
   return (
     <div className="w-80 bg-slate-900 text-white p-6 h-screen overflow-y-auto">
-      {/* Property type */}
-      <div className="mb-8">
-        <h3 className="text-lg font-bold mb-4">Property type</h3>
-        <div className="grid grid-cols-2 gap-3">
-          {PROPERTY_TYPES.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              onClick={() => toggleType(id)}
-              className={`p-4 rounded-xl transition-all ${
-                filters.types.includes(id)
-                  ? "bg-white text-slate-900"
-                  : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-              }`}
-            >
-              <Icon className="w-6 h-6 mx-auto mb-2" />
-              <div className="text-xs font-medium">{label}</div>
-            </button>
-          ))}
-        </div>
-      </div>
+      <PropertyTypeFilter
+        selected={filters.types}
+        onToggle={(id) =>
+          set({
+            types: filters.types.includes(id)
+              ? filters.types.filter((t) => t !== id)
+              : [...filters.types, id],
+          })
+        }
+      />
 
       {/* Price range */}
       <div className="mb-8">
@@ -234,167 +182,41 @@ export function FilterSidebar({
       <div className="mb-8">
         <h3 className="text-lg font-bold mb-4">Price per sqft (KES)</h3>
         <div className="flex gap-2">
-          <div className="flex-1">
-            <label className="text-xs text-slate-400 mb-1 block">Min</label>
-            <input
-              type="number"
-              min="0"
-              placeholder="0"
-              value={filters.minPricePerSqft || ""}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  minPricePerSqft: e.target.value ? Number(e.target.value) : 0,
-                }))
-              }
-              className="w-full bg-slate-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
-          </div>
-          <div className="flex-1">
-            <label className="text-xs text-slate-400 mb-1 block">Max</label>
-            <input
-              type="number"
-              min="0"
-              placeholder="Any"
-              value={filters.maxPricePerSqft || ""}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  maxPricePerSqft: e.target.value ? Number(e.target.value) : 0,
-                }))
-              }
-              className="w-full bg-slate-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Bedrooms */}
-      <div className="mb-8">
-        <h3 className="text-lg font-bold mb-4">Property Room</h3>
-        <div className="mb-4">
-          <div className="text-sm text-slate-400 mb-2">Bedroom</div>
-          <div className="flex space-x-2 flex-wrap gap-y-2">
-            {ROOM_OPTIONS.map((opt) => {
-              const val = roomValue(opt);
-              return (
-                <button
-                  key={opt}
-                  onClick={() =>
-                    setFilters((prev) => ({ ...prev, bedrooms: val }))
-                  }
-                  className={`px-3 py-2 rounded-lg transition-all text-sm ${
-                    filters.bedrooms === val
-                      ? "bg-white text-slate-900"
-                      : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-                  }`}
-                >
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-        <div>
-          <div className="text-sm text-slate-400 mb-2">Bathroom</div>
-          <div className="flex space-x-2 flex-wrap gap-y-2">
-            {ROOM_OPTIONS.map((opt) => {
-              const val = roomValue(opt);
-              return (
-                <button
-                  key={opt}
-                  onClick={() =>
-                    setFilters((prev) => ({ ...prev, bathrooms: val }))
-                  }
-                  className={`px-3 py-2 rounded-lg transition-all text-sm ${
-                    filters.bathrooms === val
-                      ? "bg-white text-slate-900"
-                      : "bg-slate-800 text-slate-400 hover:bg-slate-700"
-                  }`}
-                >
-                  {opt}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </div>
-
-      {/* Near me */}
-      <div className="mb-8">
-        <h3 className="text-lg font-bold mb-4">Location</h3>
-        <button
-          onClick={handleNearMeToggle}
-          disabled={geoLoading}
-          className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl font-semibold text-sm transition-all ${
-            filters.nearMe
-              ? "bg-orange-500 text-white"
-              : "bg-slate-800 text-slate-300 hover:bg-slate-700"
-          } disabled:opacity-60 disabled:cursor-not-allowed`}
-        >
-          {geoLoading ? (
-            <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-          ) : (
-            <MapPinIcon className="w-4 h-4" />
-          )}
-          {filters.nearMe ? "Near me (on)" : "Near me"}
-        </button>
-
-        {filters.nearMe && (
-          <div className="mt-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-xs text-slate-400">
-                Radius: {filters.radiusKm} km
+          {(["minPricePerSqft", "maxPricePerSqft"] as const).map((key, i) => (
+            <div key={key} className="flex-1">
+              <span className="text-xs text-slate-400 mb-1 block">
+                {i === 0 ? "Min" : "Max"}
               </span>
-            </div>
-            <input
-              type="range"
-              min="1"
-              max="30"
-              step="1"
-              value={filters.radiusKm}
-              onChange={(e) =>
-                setFilters((prev) => ({
-                  ...prev,
-                  radiusKm: Number(e.target.value),
-                }))
-              }
-              className="w-full accent-orange-500"
-            />
-          </div>
-        )}
-
-        {geoError && (
-          <p className="mt-2 text-xs text-red-400 leading-snug">{geoError}</p>
-        )}
-      </div>
-
-      {/* Availability */}
-      <div className="mb-8">
-        <h3 className="text-lg font-bold mb-4">Availability</h3>
-        <div className="space-y-3">
-          {[
-            { id: "ready", label: "Ready to move" },
-            { id: "6months", label: "Within 6 months" },
-            { id: "1year", label: "Within 1 year" },
-            { id: "more", label: "More than 1 year" },
-          ].map(({ id, label }) => (
-            <label
-              key={id}
-              className="flex items-center space-x-3 cursor-pointer"
-            >
               <input
-                type="radio"
-                name="availability"
-                value={id}
-                className="w-4 h-4 accent-orange-500"
-                readOnly
+                type="number"
+                min="0"
+                placeholder={i === 0 ? "0" : "Any"}
+                value={filters[key] || ""}
+                onChange={(e) =>
+                  set({ [key]: e.target.value ? Number(e.target.value) : 0 })
+                }
+                className="w-full bg-slate-800 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-orange-500 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
               />
-              <span className="text-sm text-slate-300">{label}</span>
-            </label>
+            </div>
           ))}
         </div>
       </div>
+
+      <RoomFilter
+        bedrooms={filters.bedrooms}
+        bathrooms={filters.bathrooms}
+        onBedroomsChange={(v) => set({ bedrooms: v })}
+        onBathroomsChange={(v) => set({ bathrooms: v })}
+      />
+
+      <NearMeFilter
+        active={filters.nearMe}
+        loading={geoLoading}
+        error={geoError}
+        radiusKm={filters.radiusKm}
+        onToggle={handleNearMeToggle}
+        onRadiusChange={(km) => set({ radiusKm: km })}
+      />
 
       {/* Save this search */}
       {onSaveSearch && (
@@ -419,8 +241,8 @@ export function FilterSidebar({
                 onChange={(e) => setSaveName(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && void handleSaveSearch()}
                 placeholder="e.g. 2BR in Westlands"
-                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-orange-500 mb-2"
                 autoFocus
+                className="w-full bg-slate-700 text-white rounded-lg px-3 py-2 text-sm outline-none focus:ring-1 focus:ring-orange-500 mb-2"
               />
               <button
                 onClick={() => void handleSaveSearch()}
@@ -433,7 +255,7 @@ export function FilterSidebar({
           ) : (
             <button
               onClick={() => setShowSaveInput(true)}
-              disabled={!active}
+              disabled={!hasActiveFilters(filters)}
               className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 text-slate-300 rounded-xl font-semibold text-sm hover:bg-slate-700 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
             >
               <BookmarkIcon className="w-4 h-4" />
@@ -443,7 +265,6 @@ export function FilterSidebar({
         </div>
       )}
 
-      {/* Reset */}
       <button
         onClick={handleReset}
         className="w-full px-4 py-3 bg-slate-800 text-slate-300 rounded-xl font-semibold hover:bg-slate-700 transition-colors"
