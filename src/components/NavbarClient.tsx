@@ -1,13 +1,12 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import {
   HomeIcon,
-  SearchIcon,
   UserIcon,
   MenuIcon,
   XIcon,
@@ -32,7 +31,24 @@ export function NavbarClient({
   const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: session, status } = useSession();
+
+  // Close user menu on outside click
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(e.target as Node)
+      ) {
+        setUserMenuOpen(false);
+      }
+    }
+    if (userMenuOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+    }
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [userMenuOpen]);
   const isAuthenticated = status === "authenticated";
 
   // Prefer client session role (always fresh), fall back to server-rendered role
@@ -42,7 +58,6 @@ export function NavbarClient({
   const isActive = (path: string) => pathname === path;
 
   const navLinks = [
-    { href: "/", label: "Find Home" },
     { href: "/explore", label: "Explore" },
     { href: "#", label: "Agents" },
   ];
@@ -105,10 +120,6 @@ export function NavbarClient({
 
           {/* Right: actions */}
           <div className="flex items-center space-x-3">
-            <button className="hidden sm:block p-2 text-slate-600 hover:text-accent transition-colors">
-              <SearchIcon className="w-5 h-5" />
-            </button>
-
             {/* Notification bell — only for authenticated users */}
             {isAuthenticated && (
               <div className="hidden sm:block">
@@ -116,20 +127,22 @@ export function NavbarClient({
               </div>
             )}
 
-            {/* Post Property button */}
-            <Link
-              href="/dashboard/listings/new"
-              className="hidden md:flex items-center space-x-2 px-4 py-2 bg-accent text-white rounded-xl font-semibold hover:bg-accent-hover transition-colors"
-            >
-              <span>Post Property</span>
-            </Link>
+            {/* Post Property button — owners and agents only */}
+            {(role === "owner" || role === "agent") && (
+              <Link
+                href="/dashboard/listings/new"
+                className="hidden md:flex items-center space-x-2 px-4 py-2 bg-accent text-white rounded-xl font-semibold hover:bg-accent-hover transition-colors"
+              >
+                <span>Post Property</span>
+              </Link>
+            )}
 
             {/* User menu — desktop */}
             {isAuthenticated ? (
-              <div className="relative hidden sm:block">
+              <div className="relative hidden sm:block" ref={userMenuRef}>
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center space-x-2 focus:outline-none"
+                  className="cursor-pointer flex items-center space-x-2 focus:outline-none"
                   aria-label="User menu"
                 >
                   {session.user?.image ? (
@@ -143,7 +156,12 @@ export function NavbarClient({
                   ) : (
                     <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center">
                       <span className="text-sm font-semibold text-accent">
-                        {session.user?.name?.[0]?.toUpperCase() ?? "U"}
+                        {session.user?.name
+                          ?.split(" ")
+                          .filter(Boolean)
+                          .map((n) => n[0].toUpperCase())
+                          .slice(0, 2)
+                          .join("") ?? "U"}
                       </span>
                     </div>
                   )}
@@ -170,8 +188,9 @@ export function NavbarClient({
                       <Link
                         href="/dashboard/profile"
                         onClick={() => setUserMenuOpen(false)}
-                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
+                        className="flex items-center gap-2 px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
                       >
+                        <UserIcon className="w-4 h-4" />
                         My Profile
                       </Link>
 
@@ -262,7 +281,7 @@ export function NavbarClient({
                 </Link>
               ))}
 
-              {(role === "owner" || role === "agent" || !isAuthenticated) && (
+              {(role === "owner" || role === "agent") && (
                 <div className="pt-3 border-t border-slate-100 mt-3">
                   <Link
                     href="/dashboard/listings/new"

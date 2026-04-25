@@ -103,7 +103,7 @@ export function NotificationPanel({
       {/* Bell button */}
       <button
         onClick={handleToggle}
-        className="p-2 text-slate-600 hover:text-accent transition-colors relative"
+        className="cursor-pointer p-2 text-slate-600 hover:text-accent transition-colors relative"
         aria-label="Notifications"
       >
         <BellIcon className="w-5 h-5" />
