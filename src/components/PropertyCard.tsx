@@ -8,7 +8,6 @@ import {
   BedIcon,
   BathIcon,
   SquareIcon,
-  BadgeCheckIcon,
 } from "lucide-react";
 import type { PropertyListItem } from "@/types/index";
 import { formatPrice } from "@/lib/utils";
@@ -17,11 +16,13 @@ import { SaveButton } from "./SaveButton";
 interface PropertyCardProps {
   property: PropertyListItem;
   variant?: "grid" | "horizontal";
+  distanceKm?: number | null;
 }
 
 export function PropertyCard({
   property,
   variant = "grid",
+  distanceKm = null,
 }: PropertyCardProps) {
   const image = property.images?.[0] ?? "";
 
@@ -49,6 +50,15 @@ export function PropertyCard({
                 FOR {property.price_type === "sale" ? "SALE" : "RENT"}
               </span>
             </div>
+            {distanceKm !== null && (
+              <div className="absolute bottom-3 left-3">
+                <span className="bg-white/90 text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm">
+                  {distanceKm < 1
+                    ? `${Math.round(distanceKm * 1000)}m away`
+                    : `${distanceKm.toFixed(1)}km away`}
+                </span>
+              </div>
+            )}
             <div className="absolute top-3 right-3 w-9 h-9 bg-white rounded-full flex items-center justify-center hover:bg-slate-100 transition-colors shadow-sm">
               <SaveButton propertyId={property.id} />
             </div>
@@ -58,11 +68,6 @@ export function PropertyCard({
               <h3 className="font-bold text-base text-primary">
                 {formatPrice(property.price, property.price_type)}
               </h3>
-              {property.listing_status === "published" && (
-                <span title="Verified">
-                  <BadgeCheckIcon className="w-4 h-4 text-green-500 shrink-0" />
-                </span>
-              )}
             </div>
             <p className="text-xs text-slate-600 mb-2 truncate">
               {property.neighborhood}, {property.location}
@@ -80,11 +85,6 @@ export function PropertyCard({
                 <SquareIcon className="w-4 h-4" />
                 <span>{property.sqft} sq ft</span>
               </div>
-              {property.sqft > 0 && (
-                <span className="text-slate-400">
-                  {(property.price / property.sqft).toFixed(0)} KES/sqft
-                </span>
-              )}
             </div>
           </div>
         </motion.div>
@@ -117,11 +117,6 @@ export function PropertyCard({
               <h3 className="font-bold text-xl text-primary">
                 {property.title}
               </h3>
-              {property.listing_status === "published" && (
-                <span title="Verified">
-                  <BadgeCheckIcon className="w-5 h-5 text-green-500 shrink-0" />
-                </span>
-              )}
             </div>
             <span className="font-bold text-xl text-accent">
               {formatPrice(property.price, property.price_type)}
@@ -151,11 +146,6 @@ export function PropertyCard({
                 <BathIcon className="w-4 h-4" />
                 <span>{property.bathrooms} Bath</span>
               </div>
-              {property.sqft > 0 && (
-                <span className="text-slate-400 text-xs">
-                  {(property.price / property.sqft).toFixed(0)} KES/sqft
-                </span>
-              )}
             </div>
           </div>
         </div>

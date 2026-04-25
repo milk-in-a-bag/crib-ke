@@ -283,16 +283,12 @@ export function Explore({
                       )
                     : null;
                 return (
-                  <div key={property.id} className="relative">
-                    {distKm !== null && (
-                      <span className="absolute top-2 left-2 z-10 bg-white/90 text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm">
-                        {distKm < 1
-                          ? `${Math.round(distKm * 1000)}m away`
-                          : `${distKm.toFixed(1)}km away`}
-                      </span>
-                    )}
-                    <PropertyCard property={property} variant="horizontal" />
-                  </div>
+                  <PropertyCard
+                    key={property.id}
+                    property={property}
+                    variant="horizontal"
+                    distanceKm={distKm}
+                  />
                 );
               })}
             </div>

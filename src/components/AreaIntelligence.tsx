@@ -7,8 +7,9 @@ import {
   ShieldIcon,
   TrendingUpIcon,
   WifiIcon,
+  ChevronDownIcon,
 } from "lucide-react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import type { AreaDimension, AreaRecord } from "@/types/index";
 import {
   mapAreaToIntelligenceProps,
@@ -72,6 +73,7 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
     Map<AreaDimension, DimensionCount>
   >(new Map());
   const [ratingsKey, setRatingsKey] = useState(0); // bump to re-fetch after submission
+  const [lifestyleOpen, setLifestyleOpen] = useState(false);
 
   useEffect(() => {
     if (!props.area?.id) return;
@@ -100,6 +102,17 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
     if (!entry) return "";
     return `${entry.count} rating${entry.count === 1 ? "" : "s"}`;
   }
+
+  const lifestyleAvg = data
+    ? Math.round(
+        (data.lifestyleScore.nightlife +
+          data.lifestyleScore.restaurants +
+          data.lifestyleScore.parks) /
+          3,
+      )
+    : 0;
+
+  if (!data) return null;
 
   return (
     <div className="bg-white rounded-2xl p-5 sm:p-8 shadow-sm">
@@ -266,62 +279,78 @@ export function AreaIntelligence(props: AreaIntelligenceComponentProps) {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.4 }}
         >
-          <div className="flex items-center space-x-3 mb-4">
-            <TrendingUpIcon className="w-6 h-6 text-accent" />
-            <div className="font-bold text-lg text-primary">
-              Lifestyle Score
+          <button
+            onClick={() => setLifestyleOpen((o) => !o)}
+            className="w-full flex items-center justify-between mb-4"
+          >
+            <div className="flex items-center space-x-3">
+              <TrendingUpIcon className="w-6 h-6 text-accent" />
+              <div className="font-bold text-lg text-primary">
+                Lifestyle Score
+              </div>
             </div>
+            <div className="flex items-center gap-3">
+              <span
+                className={`text-3xl font-bold ${getScoreColor(lifestyleAvg)}`}
+              >
+                {lifestyleAvg}
+              </span>
+              <ChevronDownIcon
+                className={`w-5 h-5 text-slate-400 transition-transform duration-200 ${lifestyleOpen ? "rotate-180" : ""}`}
+              />
+            </div>
+          </button>
+          <div className="w-full bg-slate-200 rounded-full h-2 mb-3">
+            <div
+              className={`h-2 rounded-full ${getProgressColor(lifestyleAvg)}`}
+              style={{ width: `${lifestyleAvg}%` }}
+            />
           </div>
-          <div className="space-y-3">
-            <div>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-slate-600">Nightlife</span>
-                <span
-                  className={`font-semibold ${getScoreColor(data.lifestyleScore.nightlife)}`}
-                >
-                  {data.lifestyleScore.nightlife}
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-1.5">
-                <div
-                  className={`h-1.5 rounded-full ${getProgressColor(data.lifestyleScore.nightlife)}`}
-                  style={{ width: `${data.lifestyleScore.nightlife}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-slate-600">Restaurants</span>
-                <span
-                  className={`font-semibold ${getScoreColor(data.lifestyleScore.restaurants)}`}
-                >
-                  {data.lifestyleScore.restaurants}
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-1.5">
-                <div
-                  className={`h-1.5 rounded-full ${getProgressColor(data.lifestyleScore.restaurants)}`}
-                  style={{ width: `${data.lifestyleScore.restaurants}%` }}
-                />
-              </div>
-            </div>
-            <div>
-              <div className="flex items-center justify-between text-sm mb-1">
-                <span className="text-slate-600">Parks &amp; Recreation</span>
-                <span
-                  className={`font-semibold ${getScoreColor(data.lifestyleScore.parks)}`}
-                >
-                  {data.lifestyleScore.parks}
-                </span>
-              </div>
-              <div className="w-full bg-slate-200 rounded-full h-1.5">
-                <div
-                  className={`h-1.5 rounded-full ${getProgressColor(data.lifestyleScore.parks)}`}
-                  style={{ width: `${data.lifestyleScore.parks}%` }}
-                />
-              </div>
-            </div>
-          </div>
+          <AnimatePresence>
+            {lifestyleOpen && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
+              >
+                <div className="space-y-3 pt-3 border-t border-slate-200">
+                  {[
+                    {
+                      label: "Nightlife",
+                      value: data.lifestyleScore.nightlife,
+                    },
+                    {
+                      label: "Restaurants",
+                      value: data.lifestyleScore.restaurants,
+                    },
+                    {
+                      label: "Parks & Recreation",
+                      value: data.lifestyleScore.parks,
+                    },
+                  ].map(({ label, value }) => (
+                    <div key={label}>
+                      <div className="flex items-center justify-between text-sm mb-1">
+                        <span className="text-slate-600">{label}</span>
+                        <span
+                          className={`font-semibold ${getScoreColor(value)}`}
+                        >
+                          {value}
+                        </span>
+                      </div>
+                      <div className="w-full bg-slate-200 rounded-full h-1.5">
+                        <div
+                          className={`h-1.5 rounded-full ${getProgressColor(value)}`}
+                          style={{ width: `${value}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </motion.div>
       </div>
 
