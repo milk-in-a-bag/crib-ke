@@ -18,6 +18,23 @@ const MapView = dynamic(
 
 const NAIROBI_CENTER: [number, number] = [-1.2921, 36.8219];
 
+function haversineKm(
+  lat1: number,
+  lng1: number,
+  lat2: number,
+  lng2: number,
+): number {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLng = ((lng2 - lng1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) *
+      Math.cos((lat2 * Math.PI) / 180) *
+      Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
 interface ExploreProps {
   initialProperties?: PropertyListItem[];
   initialTotal?: number;
@@ -33,12 +50,36 @@ export function Explore({
     useState<PropertyListItem[]>(initialProperties);
   const [total, setTotal] = useState(initialTotal);
   const [loading, setLoading] = useState(false);
-  const [searchType, setSearchType] = useState<"buy" | "rent">(
-    (initialSearchParams.price_type as "buy" | "rent") ?? "buy",
+  const [searchType, setSearchType] = useState<"all" | "buy" | "rent">(
+    (initialSearchParams.price_type as "all" | "buy" | "rent") ?? "all",
   );
   const [sortBy, setSortBy] = useState(initialSearchParams.sort ?? "newest");
   const [query, setQuery] = useState(initialSearchParams.q ?? "");
   const [showFilters, setShowFilters] = useState(false);
+  const [userLocation, setUserLocation] = useState<[number, number] | null>(
+    null,
+  );
+
+  // Silently request location on load — center map if granted
+  useEffect(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
+      () => {
+        /* denied — no-op */
+      },
+    );
+  }, []);
+
+  const handleLocate = useCallback(() => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => setUserLocation([pos.coords.latitude, pos.coords.longitude]),
+      () => {
+        /* denied — no-op */
+      },
+    );
+  }, []);
 
   const fetchProperties = useCallback(
     async (overrides: Record<string, string> = {}) => {
@@ -46,7 +87,9 @@ export function Explore({
         const params = new URLSearchParams({
           ...(query ? { q: query } : {}),
           sort: sortBy,
-          price_type: searchType === "rent" ? "rent" : "sale",
+          ...(searchType !== "all"
+            ? { price_type: searchType === "rent" ? "rent" : "sale" }
+            : {}),
           ...overrides,
         });
         setLoading(true);
@@ -79,7 +122,7 @@ export function Explore({
     (filters: FilterState) => {
       const overrides: Record<string, string> = {};
       if (filters.minPrice > 0) overrides.min_price = String(filters.minPrice);
-      if (filters.maxPrice > 0 && filters.maxPrice < 2000000)
+      if (filters.maxPrice > 0 && filters.maxPrice < 300000)
         overrides.max_price = String(filters.maxPrice);
       if (filters.bedrooms > 0) overrides.bedrooms = String(filters.bedrooms);
       if (filters.bathrooms > 0)
@@ -100,47 +143,16 @@ export function Explore({
         const mapped = typeMap[filters.types[0]]?.[0];
         if (mapped) overrides.type = mapped;
       }
-      if (filters.minPricePerSqft > 0)
-        overrides.min_price_per_sqft = String(filters.minPricePerSqft);
-      if (filters.maxPricePerSqft > 0)
-        overrides.max_price_per_sqft = String(filters.maxPricePerSqft);
-      if (filters.nearMe && filters.lat !== null && filters.lng !== null) {
-        overrides.lat = String(filters.lat);
-        overrides.lng = String(filters.lng);
-        overrides.radius_km = String(filters.radiusKm);
-        overrides.sort = "distance";
-      }
       fetchProperties(overrides);
     },
     [fetchProperties],
-  );
-
-  const handleSaveSearch = useCallback(
-    async (name: string) => {
-      // Collect current filter state from the last fetch params
-      // We build the filters object from current state
-      const filters = {
-        q: query || undefined,
-        sort: sortBy,
-        price_type: searchType === "rent" ? "rent" : "sale",
-      };
-      await fetch("/api/saved-searches", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, filters }),
-      });
-    },
-    [query, sortBy, searchType],
   );
 
   return (
     <div className="flex h-[calc(100vh-64px)] mt-16 relative">
       {/* Desktop sidebar - always visible */}
       <div className="hidden lg:block shrink-0">
-        <FilterSidebar
-          onFilterChange={handleFilterChange}
-          onSaveSearch={handleSaveSearch}
-        />
+        <FilterSidebar onFilterChange={handleFilterChange} />
       </div>
 
       {/* Mobile filter overlay */}
@@ -168,10 +180,7 @@ export function Explore({
                 >
                   <XIcon className="w-4 h-4" />
                 </button>
-                <FilterSidebar
-                  onFilterChange={handleFilterChange}
-                  onSaveSearch={handleSaveSearch}
-                />
+                <FilterSidebar onFilterChange={handleFilterChange} />
               </div>
             </motion.div>
           </>
@@ -192,9 +201,12 @@ export function Explore({
           <div className="relative shrink-0">
             <select
               value={searchType}
-              onChange={(e) => setSearchType(e.target.value as "buy" | "rent")}
+              onChange={(e) =>
+                setSearchType(e.target.value as "all" | "buy" | "rent")
+              }
               className="appearance-none bg-white border border-slate-200 rounded-xl px-3 sm:px-4 py-2 pr-8 sm:pr-10 font-semibold text-sm cursor-pointer hover:border-accent transition-colors"
             >
+              <option value="all">All</option>
               <option value="buy">Buy</option>
               <option value="rent">Rent</option>
             </select>
@@ -237,7 +249,13 @@ export function Explore({
 
         {/* Map - takes all remaining space */}
         <div className="flex-1 min-h-0 relative" style={{ minHeight: "300px" }}>
-          <MapView properties={properties} center={NAIROBI_CENTER} zoom={12} />
+          <MapView
+            properties={properties}
+            center={NAIROBI_CENTER}
+            zoom={12}
+            userLocation={userLocation}
+            onLocate={handleLocate}
+          />
         </div>
 
         {/* Property cards strip - fixed height */}
@@ -254,13 +272,29 @@ export function Explore({
               className="flex space-x-4 pb-2 transition-opacity duration-200"
               style={{ opacity: loading ? 0.5 : 1 }}
             >
-              {properties.map((property) => (
-                <PropertyCard
-                  key={property.id}
-                  property={property}
-                  variant="horizontal"
-                />
-              ))}
+              {properties.map((property) => {
+                const distKm =
+                  userLocation && property.latitude && property.longitude
+                    ? haversineKm(
+                        userLocation[0],
+                        userLocation[1],
+                        property.latitude,
+                        property.longitude,
+                      )
+                    : null;
+                return (
+                  <div key={property.id} className="relative">
+                    {distKm !== null && (
+                      <span className="absolute top-2 left-2 z-10 bg-white/90 text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-sm">
+                        {distKm < 1
+                          ? `${Math.round(distKm * 1000)}m away`
+                          : `${distKm.toFixed(1)}km away`}
+                      </span>
+                    )}
+                    <PropertyCard property={property} variant="horizontal" />
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
