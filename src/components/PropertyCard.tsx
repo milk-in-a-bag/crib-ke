@@ -93,9 +93,9 @@ export function PropertyCard({
   }
 
   return (
-    <Link href={`/property/${property.id}`}>
+    <Link href={`/property/${property.id}`} className="h-full">
       <motion.div
-        className="bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all overflow-hidden"
+        className="h-full bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all overflow-hidden flex flex-col"
         whileHover={{ y: -8 }}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -111,7 +111,7 @@ export function PropertyCard({
           </div>
         </div>
 
-        <div className="p-5">
+        <div className="p-5 flex-1">
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-1.5">
               <h3 className="font-bold text-xl text-primary">

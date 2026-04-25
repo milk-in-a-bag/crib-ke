@@ -35,14 +35,18 @@ export function NavbarClient({
   const userMenuRef = useRef<HTMLDivElement>(null);
   const { data: session, status } = useSession();
 
-  // Transparent → white on scroll
+  const isHomePage = pathname === "/";
+  const isTransparent = isHomePage && !scrolled;
+
+  // Transparent → white on scroll (only on home page)
   useEffect(() => {
+    if (!isHomePage) return;
     function handleScroll() {
       setScrolled(window.scrollY > 10);
     }
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isHomePage]);
 
   // Close user menu on outside click
   useEffect(() => {
@@ -102,8 +106,8 @@ export function NavbarClient({
 
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 border-b transition-all duration-300 ${
-        scrolled
+      className={`fixed top-0 left-0 right-0 z-[1000] border-b transition-all duration-300 ${
+        scrolled || !isHomePage
           ? "bg-white border-slate-200 shadow-sm"
           : "bg-transparent border-transparent"
       }`}
@@ -114,10 +118,10 @@ export function NavbarClient({
           <div className="flex items-center space-x-8">
             <Link href="/" className="flex items-center space-x-2">
               <HomeIcon
-                className={`w-7 h-7 ${scrolled ? "text-accent" : "text-white"}`}
+                className={`w-7 h-7 ${isTransparent ? "text-white" : "text-accent"}`}
               />
               <span
-                className={`text-xl font-bold ${scrolled ? "text-primary" : "text-white"}`}
+                className={`text-xl font-bold ${isTransparent ? "text-white" : "text-primary"}`}
               >
                 CribKE
               </span>
@@ -130,12 +134,12 @@ export function NavbarClient({
                   href={link.href}
                   className={`text-sm font-medium transition-colors ${
                     isActive(link.href)
-                      ? scrolled
-                        ? "text-accent"
-                        : "text-white font-semibold"
-                      : scrolled
-                        ? "text-slate-600 hover:text-accent"
-                        : "text-white/80 hover:text-white"
+                      ? isTransparent
+                        ? "text-white font-semibold"
+                        : "text-accent"
+                      : isTransparent
+                        ? "text-white/80 hover:text-white"
+                        : "text-slate-600 hover:text-accent"
                   }`}
                 >
                   {link.label}
@@ -151,7 +155,7 @@ export function NavbarClient({
               <div className="hidden sm:block">
                 <NotificationPanel
                   initialUnreadCount={initialUnreadCount}
-                  scrolled={scrolled}
+                  scrolled={!isTransparent}
                 />
               </div>
             )}
@@ -184,10 +188,10 @@ export function NavbarClient({
                     />
                   ) : (
                     <div
-                      className={`w-9 h-9 rounded-full flex items-center justify-center ${scrolled ? "bg-accent/10" : "bg-white/20"}`}
+                      className={`w-9 h-9 rounded-full flex items-center justify-center ${isTransparent ? "bg-white/20" : "bg-accent/10"}`}
                     >
                       <span
-                        className={`text-sm font-semibold ${scrolled ? "text-accent" : "text-white"}`}
+                        className={`text-sm font-semibold ${isTransparent ? "text-white" : "text-accent"}`}
                       >
                         {session.user?.name
                           ?.split(" ")

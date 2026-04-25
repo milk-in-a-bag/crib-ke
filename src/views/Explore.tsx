@@ -134,7 +134,7 @@ export function Explore({
   );
 
   return (
-    <div className="flex h-[calc(100vh-64px)] relative">
+    <div className="flex h-[calc(100vh-64px)] mt-16 relative">
       {/* Desktop sidebar - always visible */}
       <div className="hidden lg:block shrink-0">
         <FilterSidebar
