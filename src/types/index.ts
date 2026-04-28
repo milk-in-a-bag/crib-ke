@@ -12,7 +12,8 @@ export type NotificationType =
   | "booking_confirmed"
   | "booking_cancelled"
   | "booking_rescheduled"
-  | "new_listing_match";
+  | "new_listing_match"
+  | "new_message";
 export type AreaDimension =
   | "safety"
   | "water"
@@ -196,4 +197,31 @@ export interface BookingWithDetails extends BookingRecord {
   seeker_name: string;
   seeker_email: string;
   listing_title: string;
+}
+
+export interface MessageThread {
+  id: string;
+  inquiry_id: string;
+  participant_seeker_id: string;
+  participant_owner_id: string;
+  created_at: string;
+  updated_at: string;
+  // joined fields
+  seeker_name?: string;
+  owner_name?: string;
+  inquiry_message?: string;
+  listing_title?: string;
+  unread_count?: number;
+}
+
+export interface ThreadMessage {
+  id: string;
+  thread_id: string;
+  sender_id: string;
+  body: string;
+  read_by_seeker: boolean;
+  read_by_owner: boolean;
+  created_at: string;
+  // joined
+  sender_name?: string;
 }
