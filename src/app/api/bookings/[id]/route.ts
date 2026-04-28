@@ -76,12 +76,23 @@ export async function PATCH(
     const { action } = parsed.data;
     const currentStatus = booking.status as BookingStatus;
 
-    // Seekers can only cancel their own bookings
-    if (isSeeker && !isOwner && action !== "cancel") {
-      return Response.json(
-        { error: "Seekers may only cancel bookings" },
-        { status: 403 },
-      );
+    // Seekers can only cancel confirmed bookings or reschedule/cancel pending ones
+    if (isSeeker && !isOwner) {
+      if (action === "confirm") {
+        return Response.json(
+          { error: "Seekers cannot confirm bookings" },
+          { status: 403 },
+        );
+      }
+      if (action === "reschedule" && currentStatus !== "pending") {
+        return Response.json(
+          {
+            error:
+              "You can only reschedule a pending booking. If your visit was confirmed, please cancel and request a new date.",
+          },
+          { status: 403 },
+        );
+      }
     }
 
     if (action === "confirm") {
@@ -150,14 +161,6 @@ export async function PATCH(
     }
 
     if (action === "reschedule") {
-      // Only owners can reschedule
-      if (!isOwner) {
-        return Response.json(
-          { error: "Only the property owner can reschedule bookings" },
-          { status: 403 },
-        );
-      }
-
       const { scheduled_date } = parsed.data as {
         action: "reschedule";
         scheduled_date: string;

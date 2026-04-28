@@ -85,6 +85,30 @@ export async function POST(request: NextRequest) {
 
     const { property_id, scheduled_date } = parsed.data;
 
+    // Check for an existing active booking for this user + property
+    const existing = await sql`
+      SELECT id, scheduled_date, status
+      FROM bookings
+      WHERE user_id = ${user.id}::uuid
+        AND property_id = ${property_id}::uuid
+        AND status IN ('pending', 'confirmed')
+      LIMIT 1
+    `;
+
+    if (existing.length > 0) {
+      return Response.json(
+        {
+          error: "You already have an active booking for this property.",
+          existing_booking: {
+            id: existing[0].id,
+            scheduled_date: existing[0].scheduled_date,
+            status: existing[0].status,
+          },
+        },
+        { status: 409 },
+      );
+    }
+
     const result = await sql`
       INSERT INTO bookings (user_id, property_id, scheduled_date, status)
       VALUES (
