@@ -1,8 +1,15 @@
 import { Home } from "@/views/Home";
 import { sql } from "@/lib/db";
 import type { PropertyListItem, AreaRecord } from "@/types";
+import { auth } from "@/auth";
+import { redirect } from "next/navigation";
 
 export default async function Page() {
+  const session = await auth();
+  if (session?.user?.id) {
+    redirect("/dashboard");
+  }
+
   // Fetch 6 most recent available properties
   const propertiesResult = await sql`
     SELECT 

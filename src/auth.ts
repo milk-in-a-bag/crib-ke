@@ -246,6 +246,17 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
     }),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      // Redirect to /dashboard after sign-in instead of the default /
+      if (url === baseUrl || url === `${baseUrl}/`) {
+        return `${baseUrl}/dashboard`;
+      }
+      // Allow relative callback URLs (e.g. /dashboard/messages)
+      if (url.startsWith("/")) return `${baseUrl}${url}`;
+      // Allow same-origin callback URLs
+      if (new URL(url).origin === baseUrl) return url;
+      return `${baseUrl}/dashboard`;
+    },
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
