@@ -1,13 +1,14 @@
 "use client";
 import React, { useState } from "react";
 import { useSession } from "next-auth/react";
+import Link from "next/link";
 
 interface ContactFormProps {
-  propertyId: string;
+  readonly propertyId: string;
 }
 
 export function ContactForm({ propertyId }: ContactFormProps) {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
 
   const [name, setName] = useState(session?.user?.name ?? "");
   const [phone, setPhone] = useState("");
@@ -80,6 +81,37 @@ export function ContactForm({ propertyId }: ContactFormProps) {
     );
   }
 
+  // Loading state — show a skeleton/disabled placeholder
+  if (status === "loading") {
+    return (
+      <div className="space-y-3 animate-pulse">
+        <div className="h-10 bg-slate-200 rounded-lg" />
+        <div className="h-10 bg-slate-200 rounded-lg" />
+        <div className="h-20 bg-slate-200 rounded-lg" />
+        <div className="h-11 bg-slate-200 rounded-xl" />
+      </div>
+    );
+  }
+
+  // Unauthenticated — prompt to sign in
+  if (status === "unauthenticated") {
+    const callbackUrl = encodeURIComponent(`/property/${propertyId}`);
+    return (
+      <div className="bg-slate-100 border border-slate-200 rounded-xl p-5 text-center">
+        <p className="text-slate-700 text-sm font-medium mb-3">
+          Sign in to contact the owner
+        </p>
+        <Link
+          href={`/auth/signin?callbackUrl=${callbackUrl}`}
+          className="inline-block px-5 py-2.5 bg-accent text-white rounded-xl font-semibold text-sm hover:bg-accent-hover transition-colors"
+        >
+          Sign in
+        </Link>
+      </div>
+    );
+  }
+
+  // Authenticated — render the full form
   return (
     <form onSubmit={handleSubmit} className="space-y-3">
       <div>

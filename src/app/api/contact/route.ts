@@ -13,6 +13,16 @@ const contactSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Require authentication before any other logic (Requirement 5.4)
+    const session = await auth();
+    if (!session?.user?.id) {
+      return Response.json(
+        { error: "You must be signed in to send an inquiry." },
+        { status: 401 },
+      );
+    }
+    const userId = session.user.id;
+
     let body: unknown;
     try {
       body = await request.json();
@@ -29,10 +39,6 @@ export async function POST(request: NextRequest) {
     }
 
     const { property_id, name, phone, message } = parsed.data;
-
-    // Optionally attach session user_id if authenticated
-    const session = await auth();
-    const userId = session?.user?.id ?? null;
 
     // Look up the listing's owner_id (Requirement 3.3, 3.7)
     const propertyRows = await sql`
