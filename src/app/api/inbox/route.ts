@@ -24,10 +24,15 @@ export async function GET(request: NextRequest) {
         ci.owner_id,
         ci.read,
         ci.created_at,
-        p.title AS listing_title
+        p.title AS listing_title,
+        mt.id AS thread_id,
+        COUNT(tm.id) FILTER (WHERE tm.read_by_owner = FALSE)::int AS unread_message_count
       FROM contact_inquiries ci
       LEFT JOIN properties p ON p.id = ci.property_id
+      LEFT JOIN message_threads mt ON mt.inquiry_id = ci.id
+      LEFT JOIN thread_messages tm ON tm.thread_id = mt.id
       WHERE ci.owner_id = ${user.id}::uuid
+      GROUP BY ci.id, p.title, mt.id
       ORDER BY ci.created_at DESC
       LIMIT ${pageSize} OFFSET ${offset}
     `;

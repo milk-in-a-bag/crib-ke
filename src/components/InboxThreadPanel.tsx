@@ -207,7 +207,11 @@ export function InboxThreadPanel({
       )}
 
       {/* Reply form */}
-      <form onSubmit={handleSubmit} className="space-y-2">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-2"
+        onClick={(e) => e.stopPropagation()}
+      >
         <textarea
           value={replyText}
           onChange={(e) => setReplyText(e.target.value)}

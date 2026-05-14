@@ -6,6 +6,7 @@ import {
   MessageSquareIcon,
   BookmarkIcon,
   ShieldCheckIcon,
+  Building2Icon,
 } from "lucide-react";
 import type { DashboardLink } from "./NavDashboardLinks";
 
@@ -15,6 +16,7 @@ const iconMap = {
   MessageSquare: MessageSquareIcon,
   Bookmark: BookmarkIcon,
   ShieldCheck: ShieldCheckIcon,
+  Building2: Building2Icon,
 } as const;
 
 interface NavIconProps {

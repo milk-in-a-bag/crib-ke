@@ -9,11 +9,9 @@ import { motion, AnimatePresence } from "framer-motion";
 import { NavIcon } from "./NavIcon";
 import type { DashboardLink } from "./NavDashboardLinks";
 import type { Session } from "next-auth";
-import type { UserRole } from "@/types";
 
 interface UserDropdownProps {
   session: Session;
-  role: UserRole | null;
   isTransparent: boolean;
   isOpen: boolean;
   onToggle: () => void;
@@ -34,7 +32,6 @@ function getInitials(name: string | null | undefined): string {
 
 export function UserDropdown({
   session,
-  role,
   isTransparent,
   isOpen,
   onToggle,
@@ -119,18 +116,6 @@ export function UserDropdown({
               <UserIcon className="w-4 h-4" />
               My Profile
             </Link>
-
-            {/* My Listings — owners and agents only */}
-            {(role === "owner" || role === "agent") && (
-              <Link
-                href="/dashboard/listings"
-                onClick={onClose}
-                role="menuitem"
-                className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 transition-colors"
-              >
-                My Listings
-              </Link>
-            )}
 
             {/* Role-based links */}
             {dashboardLinks.map((dl) => (

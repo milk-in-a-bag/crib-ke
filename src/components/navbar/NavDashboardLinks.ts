@@ -8,7 +8,8 @@ export interface DashboardLink {
     | "Inbox"
     | "MessageSquare"
     | "Bookmark"
-    | "ShieldCheck";
+    | "ShieldCheck"
+    | "Building2";
   badge?: number;
 }
 
@@ -23,22 +24,17 @@ export function buildDashboardLinks(
 ): DashboardLink[] {
   if (!isAuthenticated) return [];
 
-  // Dashboard — all authenticated roles (Requirement 11.5)
-  const base: DashboardLink = {
-    href: "/dashboard",
-    label: "Dashboard",
-    iconName: "LayoutDashboard",
-  };
-
   if (role === "owner" || role === "agent") {
     return [
-      base,
-      { href: "/dashboard/inbox", label: "Inbox", iconName: "Inbox" },
-      // Messages with unread badge (Requirement 11.2)
+      {
+        href: "/dashboard/listings",
+        label: "My Listings",
+        iconName: "Building2",
+      },
       {
         href: "/dashboard/inbox",
-        label: "Messages",
-        iconName: "MessageSquare",
+        label: "Inbox",
+        iconName: "Inbox",
         badge: unreadMessageCount > 0 ? unreadMessageCount : undefined,
       },
     ];
@@ -46,13 +42,11 @@ export function buildDashboardLinks(
 
   if (role === "seeker") {
     return [
-      base,
       {
         href: "/dashboard/saved-searches",
         label: "Saved Searches",
         iconName: "Bookmark",
       },
-      // Messages link (Requirement 11.1)
       {
         href: "/dashboard/messages",
         label: "Messages",
@@ -63,7 +57,11 @@ export function buildDashboardLinks(
 
   if (role === "admin") {
     return [
-      base,
+      {
+        href: "/dashboard",
+        label: "Dashboard",
+        iconName: "LayoutDashboard",
+      },
       {
         href: "/dashboard/admin/queue",
         label: "Admin Queue",
@@ -72,5 +70,5 @@ export function buildDashboardLinks(
     ];
   }
 
-  return [base];
+  return [];
 }

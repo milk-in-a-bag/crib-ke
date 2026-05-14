@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import type { BookingStatus, BookingWithDetails } from "@/types";
 
 interface BookingManagerProps {
@@ -31,6 +31,7 @@ function formatDate(dateStr: string): string {
 export function BookingManager({ initialBookings }: BookingManagerProps) {
   const [bookings, setBookings] =
     useState<BookingWithDetails[]>(initialBookings);
+  const lastGoodState = useRef<BookingWithDetails[]>(initialBookings);
   const [reschedulingId, setReschedulingId] = useState<string | null>(null);
   const [rescheduleDate, setRescheduleDate] = useState("");
   const [loadingId, setLoadingId] = useState<string | null>(null);
@@ -52,16 +53,24 @@ export function BookingManager({ initialBookings }: BookingManagerProps) {
         : { action };
 
     // Optimistic update
-    setBookings((prev) =>
-      prev.map((b) => {
+    setBookings((prev) => {
+      const next = prev.map((b) => {
         if (b.id !== bookingId) return b;
-        if (action === "confirm") return { ...b, status: "confirmed" };
-        if (action === "cancel") return { ...b, status: "cancelled" };
+        if (action === "confirm")
+          return { ...b, status: "confirmed" as BookingStatus };
+        if (action === "cancel")
+          return { ...b, status: "cancelled" as BookingStatus };
         if (action === "reschedule" && scheduledDate)
-          return { ...b, scheduled_date: scheduledDate, status: "pending" };
+          return {
+            ...b,
+            scheduled_date: scheduledDate,
+            status: "pending" as BookingStatus,
+          };
         return b;
-      }),
-    );
+      });
+      lastGoodState.current = prev; // snapshot before optimistic change
+      return next;
+    });
 
     try {
       const res = await fetch(`/api/bookings/${bookingId}`, {
@@ -72,9 +81,11 @@ export function BookingManager({ initialBookings }: BookingManagerProps) {
 
       if (res.ok) {
         const json = await res.json();
-        setBookings((prev) =>
-          prev.map((b) => (b.id === bookingId ? { ...b, ...json.data } : b)),
+        const updated = bookings.map((b) =>
+          b.id === bookingId ? { ...b, ...json.data } : b,
         );
+        setBookings(updated);
+        lastGoodState.current = updated;
         if (action === "reschedule") {
           setReschedulingId(null);
           setRescheduleDate("");
@@ -82,11 +93,11 @@ export function BookingManager({ initialBookings }: BookingManagerProps) {
       } else {
         const json = await res.json().catch(() => ({}));
         // Revert optimistic update on failure
-        setBookings(initialBookings);
+        setBookings(lastGoodState.current);
         setError(json.error ?? "Action failed. Please try again.");
       }
     } catch {
-      setBookings(initialBookings);
+      setBookings(lastGoodState.current);
       setError("Network error. Please try again.");
     } finally {
       setLoadingId(null);

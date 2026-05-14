@@ -19,7 +19,7 @@ export function Home({ featuredProperties, areas }: HomeProps) {
   return (
     <div className="min-h-screen">
       {/* Hero Section with Background Image */}
-      <section className="relative min-h-screen flex items-center justify-center overflow-hidden">
+      <section className="relative min-h-screen flex items-center justify-center overflow-hidden -mt-16">
         <img
           src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?w=1600"
           alt="Beautiful modern home"

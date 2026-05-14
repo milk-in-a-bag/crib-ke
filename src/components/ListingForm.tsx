@@ -181,12 +181,13 @@ export function ListingForm({ initialData }: ListingFormProps) {
       }
 
       const { data: property } = await res.json();
+      // Keep isSubmitting=true so the button stays disabled while navigating,
+      // preventing a second submission before the page changes.
       router.push(`/dashboard/listings/${property.id}/edit`);
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Something went wrong",
       );
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -208,11 +209,11 @@ export function ListingForm({ initialData }: ListingFormProps) {
       setSubmitSuccess(
         "Your listing has been submitted for review. You will be notified once it is approved.",
       );
+      setIsSubmitting(false);
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Something went wrong",
       );
-    } finally {
       setIsSubmitting(false);
     }
   };
@@ -234,6 +235,7 @@ export function ListingForm({ initialData }: ListingFormProps) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body?.error ?? "Failed to delete listing");
       }
+      // Keep isDeleting=true while navigating away to prevent double-clicks
       router.push("/dashboard/listings");
     } catch (err) {
       setSubmitError(err instanceof Error ? err.message : "Delete failed");

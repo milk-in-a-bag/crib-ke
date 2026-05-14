@@ -131,7 +131,6 @@ export function NavbarClient({
             {isAuthenticated && session ? (
               <UserDropdown
                 session={session}
-                role={role}
                 isTransparent={isTransparent}
                 isOpen={userMenuOpen}
                 onToggle={() => setUserMenuOpen((v) => !v)}
