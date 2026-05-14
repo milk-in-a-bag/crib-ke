@@ -23,5 +23,28 @@ export async function Navbar() {
     }
   }
 
-  return <NavbarClient initialUnreadCount={unreadCount} serverRole={role} />;
+  // Fetch unread message count for Owner/Agent users (Requirement 11.2)
+  let unreadMessageCount = 0;
+  if (userId && (role === "owner" || role === "agent")) {
+    try {
+      const result = await sql`
+        SELECT COUNT(*)::int AS unread_count
+        FROM thread_messages tm
+        JOIN message_threads mt ON mt.id = tm.thread_id
+        WHERE mt.participant_owner_id = ${userId}::uuid
+          AND tm.read_by_owner = FALSE
+      `;
+      unreadMessageCount = result[0]?.unread_count ?? 0;
+    } catch {
+      // Non-fatal — badge just shows 0 if DB is unavailable
+    }
+  }
+
+  return (
+    <NavbarClient
+      initialUnreadCount={unreadCount}
+      serverRole={role}
+      unreadMessageCount={unreadMessageCount}
+    />
+  );
 }
