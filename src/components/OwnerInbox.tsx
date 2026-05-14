@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { InboxThreadPanel } from "@/components/InboxThreadPanel";
 
 export interface Inquiry {
   id: string;
@@ -13,12 +14,15 @@ export interface Inquiry {
   read: boolean;
   created_at: string;
   listing_title: string | null;
+  thread_id: string | null;
+  unread_message_count: number;
 }
 
 interface OwnerInboxProps {
   readonly initialData: Inquiry[];
   readonly initialTotal: number;
   readonly initialPage: number;
+  readonly userId: string;
 }
 
 function formatRelativeTime(dateStr: string): string {
@@ -41,6 +45,7 @@ export function OwnerInbox({
   initialData,
   initialTotal,
   initialPage,
+  userId,
 }: OwnerInboxProps) {
   const [inquiries, setInquiries] = useState<Inquiry[]>(initialData);
   const [total, setTotal] = useState(initialTotal);
@@ -107,9 +112,11 @@ export function OwnerInbox({
       {inquiries.map((inquiry) => {
         const isExpanded = expandedId === inquiry.id;
         const isUnread = !inquiry.read;
-        const borderClass = isUnread
-          ? "border-blue-400 dark:border-blue-500"
-          : "border-gray-200 dark:border-gray-700";
+        const hasUnreadMessages = inquiry.unread_message_count > 0;
+        const borderClass =
+          isUnread || hasUnreadMessages
+            ? "border-blue-400 dark:border-blue-500"
+            : "border-gray-200 dark:border-gray-700";
         const dotClass = isUnread ? "bg-blue-500" : "bg-transparent";
         const messageText = isExpanded
           ? inquiry.message
@@ -131,9 +138,16 @@ export function OwnerInbox({
 
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between gap-2">
-                  <span className="font-semibold text-gray-900 dark:text-white truncate">
-                    {inquiry.name}
-                  </span>
+                  <div className="flex items-center gap-2 min-w-0">
+                    <span className="font-semibold text-gray-900 dark:text-white truncate">
+                      {inquiry.name}
+                    </span>
+                    {hasUnreadMessages && (
+                      <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500 text-white shrink-0">
+                        {inquiry.unread_message_count}
+                      </span>
+                    )}
+                  </div>
                   <span className="text-xs text-gray-400 shrink-0">
                     {formatRelativeTime(inquiry.created_at)}
                   </span>
@@ -150,15 +164,23 @@ export function OwnerInbox({
                 </p>
 
                 {isExpanded && (
-                  <div className="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700 space-y-1 text-sm text-gray-700 dark:text-gray-300">
-                    <p>
-                      <span className="font-medium">Phone:</span>{" "}
-                      {inquiry.phone}
-                    </p>
-                    <p>
-                      <span className="font-medium">Sent:</span>{" "}
-                      {new Date(inquiry.created_at).toLocaleString()}
-                    </p>
+                  <div className="mt-3">
+                    <div className="pt-3 border-t border-gray-100 dark:border-gray-700 space-y-1 text-sm text-gray-700 dark:text-gray-300">
+                      <p>
+                        <span className="font-medium">Phone:</span>{" "}
+                        {inquiry.phone}
+                      </p>
+                      <p>
+                        <span className="font-medium">Sent:</span>{" "}
+                        {new Date(inquiry.created_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <InboxThreadPanel
+                      inquiryId={inquiry.id}
+                      threadId={inquiry.thread_id}
+                      seekerUserId={inquiry.user_id}
+                      userId={userId}
+                    />
                   </div>
                 )}
               </div>

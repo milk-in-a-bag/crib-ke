@@ -32,10 +32,15 @@ export default async function InboxPage() {
       ci.owner_id,
       ci.read,
       ci.created_at,
-      p.title AS listing_title
+      p.title AS listing_title,
+      mt.id AS thread_id,
+      COUNT(tm.id) FILTER (WHERE tm.read_by_owner = FALSE)::int AS unread_message_count
     FROM contact_inquiries ci
     LEFT JOIN properties p ON p.id = ci.property_id
+    LEFT JOIN message_threads mt ON mt.inquiry_id = ci.id
+    LEFT JOIN thread_messages tm ON tm.thread_id = mt.id
     WHERE ci.owner_id = ${userId}::uuid
+    GROUP BY ci.id, p.title, mt.id
     ORDER BY ci.created_at DESC
     LIMIT ${pageSize} OFFSET 0
   `;
@@ -48,8 +53,19 @@ export default async function InboxPage() {
     WHERE owner_id = ${userId}::uuid
   `;
 
+  // Total unread message count across all threads for this owner
+  const unreadMsgRows = await sql`
+    SELECT COUNT(tm.id)::int AS total_unread_messages
+    FROM thread_messages tm
+    JOIN message_threads mt ON mt.id = tm.thread_id
+    WHERE mt.participant_owner_id = ${userId}::uuid
+      AND tm.read_by_owner = FALSE
+  `;
+
   const total: number = countRows[0]?.total ?? 0;
   const unreadCount: number = countRows[0]?.unread_count ?? 0;
+  const totalUnreadMessages: number =
+    unreadMsgRows[0]?.total_unread_messages ?? 0;
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -63,12 +79,22 @@ export default async function InboxPage() {
               {unreadCount}
             </span>
           )}
+          {totalUnreadMessages > 0 && (
+            <span
+              className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500 text-white"
+              title="Unread messages"
+            >
+              {totalUnreadMessages} message
+              {totalUnreadMessages === 1 ? "" : "s"}
+            </span>
+          )}
         </div>
 
         <OwnerInbox
           initialData={rows as Inquiry[]}
           initialTotal={total}
           initialPage={1}
+          userId={userId}
         />
       </div>
     </div>
