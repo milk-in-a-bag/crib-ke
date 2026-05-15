@@ -91,8 +91,8 @@ export async function POST(
       : (thread.participant_seeker_id as string);
 
     const notificationLink = isSeeker
-      ? `/dashboard/inbox`
-      : `/dashboard/messages/${id}`;
+      ? `/dashboard/messages/${id}`
+      : `/dashboard/inbox/${id}`;
 
     await insertNotification(sql, {
       userId: recipientId,

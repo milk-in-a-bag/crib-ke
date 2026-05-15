@@ -2,9 +2,8 @@ import { redirect } from "next/navigation";
 import { auth } from "@/auth";
 import { sql } from "@/lib/db";
 import { hasRole } from "@/lib/rbac";
-import type { UserRole } from "@/types";
-import { OwnerInbox } from "@/components/OwnerInbox";
-import type { Inquiry } from "@/components/OwnerInbox";
+import type { MessageThread, UserRole } from "@/types";
+import { ThreadView } from "@/components/ThreadView";
 
 export default async function InboxPage() {
   const session = await auth();
@@ -19,84 +18,52 @@ export default async function InboxPage() {
   }
 
   const userId = session.user.id;
-  const pageSize = 20;
 
   const rows = await sql`
     SELECT
-      ci.id,
-      ci.property_id,
-      ci.name,
-      ci.phone,
-      ci.message,
-      ci.user_id,
-      ci.owner_id,
-      ci.read,
-      ci.created_at,
-      p.title AS listing_title,
-      mt.id AS thread_id,
-      COUNT(tm.id) FILTER (WHERE tm.read_by_owner = FALSE)::int AS unread_message_count
-    FROM contact_inquiries ci
-    LEFT JOIN properties p ON p.id = ci.property_id
-    LEFT JOIN message_threads mt ON mt.inquiry_id = ci.id
+      mt.id,
+      mt.inquiry_id,
+      mt.participant_seeker_id,
+      mt.participant_owner_id,
+      mt.created_at,
+      mt.updated_at,
+      ci.message AS inquiry_message,
+      p.title    AS listing_title,
+      us.name    AS seeker_name,
+      uo.name    AS owner_name,
+      COUNT(tm.id) FILTER (WHERE tm.read_by_owner = FALSE)::int AS unread_count
+    FROM message_threads mt
+    JOIN contact_inquiries ci ON ci.id = mt.inquiry_id
+    JOIN properties p         ON p.id  = ci.property_id
+    JOIN users us              ON us.id = mt.participant_seeker_id
+    JOIN users uo              ON uo.id = mt.participant_owner_id
     LEFT JOIN thread_messages tm ON tm.thread_id = mt.id
-    WHERE ci.owner_id = ${userId}::uuid
-    GROUP BY ci.id, p.title, mt.id
-    ORDER BY ci.created_at DESC
-    LIMIT ${pageSize} OFFSET 0
-  `;
-
-  const countRows = await sql`
-    SELECT
-      COUNT(*)::int AS total,
-      COUNT(*) FILTER (WHERE read = FALSE)::int AS unread_count
-    FROM contact_inquiries
-    WHERE owner_id = ${userId}::uuid
-  `;
-
-  // Total unread message count across all threads for this owner
-  const unreadMsgRows = await sql`
-    SELECT COUNT(tm.id)::int AS total_unread_messages
-    FROM thread_messages tm
-    JOIN message_threads mt ON mt.id = tm.thread_id
     WHERE mt.participant_owner_id = ${userId}::uuid
-      AND tm.read_by_owner = FALSE
+    GROUP BY mt.id, ci.message, p.title, us.name, uo.name
+    ORDER BY mt.updated_at DESC
   `;
 
-  const total: number = countRows[0]?.total ?? 0;
-  const unreadCount: number = countRows[0]?.unread_count ?? 0;
-  const totalUnreadMessages: number =
-    unreadMsgRows[0]?.total_unread_messages ?? 0;
+  const threads: MessageThread[] = rows.map((r) => ({
+    id: r.id as string,
+    inquiry_id: r.inquiry_id as string,
+    participant_seeker_id: r.participant_seeker_id as string,
+    participant_owner_id: r.participant_owner_id as string,
+    created_at: r.created_at as string,
+    updated_at: r.updated_at as string,
+    inquiry_message: r.inquiry_message as string | undefined,
+    listing_title: r.listing_title as string | undefined,
+    seeker_name: r.seeker_name as string | undefined,
+    owner_name: r.owner_name as string | undefined,
+    unread_count: r.unread_count as number | undefined,
+  }));
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-3xl mx-auto px-4 py-10">
-        <div className="mb-8 flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Inbox
-          </h1>
-          {unreadCount > 0 && (
-            <span className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-500 text-white">
-              {unreadCount}
-            </span>
-          )}
-          {totalUnreadMessages > 0 && (
-            <span
-              className="inline-flex items-center justify-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-green-500 text-white"
-              title="Unread messages"
-            >
-              {totalUnreadMessages} message
-              {totalUnreadMessages === 1 ? "" : "s"}
-            </span>
-          )}
-        </div>
-
-        <OwnerInbox
-          initialData={rows as Inquiry[]}
-          initialTotal={total}
-          initialPage={1}
-          userId={userId}
-        />
-      </div>
+      <ThreadView
+        threads={threads}
+        currentUserId={userId}
+        perspective="owner"
+      />
     </div>
   );
 }

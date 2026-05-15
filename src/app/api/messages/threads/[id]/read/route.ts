@@ -45,11 +45,29 @@ export async function PATCH(
         SET read_by_seeker = TRUE
         WHERE thread_id = ${id}::uuid AND read_by_seeker = FALSE
       `;
+      // Also mark the corresponding new_message notification as read
+      await sql`
+        UPDATE notifications
+        SET read = TRUE
+        WHERE user_id = ${user.id}::uuid
+          AND type = 'new_message'
+          AND read = FALSE
+          AND link = ${`/dashboard/messages/${id}`}
+      `;
     } else {
       await sql`
         UPDATE thread_messages
         SET read_by_owner = TRUE
         WHERE thread_id = ${id}::uuid AND read_by_owner = FALSE
+      `;
+      // Mark the thread-specific new_message notification as read for the owner
+      await sql`
+        UPDATE notifications
+        SET read = TRUE
+        WHERE user_id = ${user.id}::uuid
+          AND type = 'new_message'
+          AND read = FALSE
+          AND link = ${`/dashboard/inbox/${id}`}
       `;
     }
 

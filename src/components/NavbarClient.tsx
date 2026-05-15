@@ -14,7 +14,6 @@ import type { UserRole } from "@/types";
 interface NavbarClientProps {
   readonly initialUnreadCount: number;
   readonly serverRole: UserRole | null;
-  readonly unreadMessageCount?: number;
 }
 
 const NAV_LINKS = [
@@ -25,7 +24,6 @@ const NAV_LINKS = [
 export function NavbarClient({
   initialUnreadCount,
   serverRole,
-  unreadMessageCount = 0,
 }: NavbarClientProps) {
   const pathname = usePathname();
   const { data: session, status } = useSession();
@@ -41,11 +39,7 @@ export function NavbarClient({
   // @ts-expect-error role is a custom field on our user
   const role: UserRole | null = (session?.user?.role as UserRole) ?? serverRole;
 
-  const dashboardLinks = buildDashboardLinks(
-    isAuthenticated,
-    role,
-    unreadMessageCount,
-  );
+  const dashboardLinks = buildDashboardLinks(isAuthenticated, role, 0);
 
   // Transparent → white on scroll (home page only)
   useEffect(() => {

@@ -10,6 +10,7 @@ interface ThreadPanelProps {
   readonly currentUserId: string;
   readonly onBack: () => void;
   readonly onMarkRead: (threadId: string) => void;
+  readonly perspective?: "seeker" | "owner";
 }
 
 export function ThreadPanel({
@@ -17,6 +18,7 @@ export function ThreadPanel({
   currentUserId,
   onBack,
   onMarkRead,
+  perspective = "seeker",
 }: ThreadPanelProps) {
   const [messages, setMessages] = useState<ThreadMessage[]>([]);
   const [loading, setLoading] = useState(false);
@@ -53,7 +55,11 @@ export function ThreadPanel({
 
     // Mark as read and notify parent to clear the badge
     fetch(`/api/messages/threads/${thread.id}/read`, { method: "PATCH" })
-      .then(() => onMarkRead(thread.id))
+      .then(() => {
+        onMarkRead(thread.id);
+        // Dispatch event so NotificationPanel refreshes its unread count
+        window.dispatchEvent(new CustomEvent("notifications:refresh"));
+      })
       .catch(() => {});
 
     return () => {
@@ -163,7 +169,9 @@ export function ThreadPanel({
             {thread.listing_title ?? "Property"}
           </p>
           <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-            {thread.owner_name ?? "Owner"}
+            {perspective === "owner"
+              ? (thread.seeker_name ?? "Seeker")
+              : (thread.owner_name ?? "Owner")}
           </p>
         </div>
       </div>
@@ -200,7 +208,10 @@ export function ThreadPanel({
                 <p
                   className={`text-xs font-medium mb-1 ${isOwn ? "text-blue-100" : "text-gray-500 dark:text-gray-400"}`}
                 >
-                  {isOwn ? "You" : (msg.sender_name ?? "Owner")}
+                  {isOwn
+                    ? "You"
+                    : (msg.sender_name ??
+                      (perspective === "owner" ? "Seeker" : "Owner"))}
                 </p>
                 <p className="whitespace-pre-wrap wrap-break-word">
                   {msg.body}

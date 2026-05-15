@@ -145,6 +145,7 @@ export function ListingForm({ initialData }: ListingFormProps) {
 
   const onSubmit = async (data: FormValues) => {
     setSubmitError(null);
+    setSubmitSuccess(null);
     setIsSubmitting(true);
     try {
       const payload = {
@@ -180,10 +181,15 @@ export function ListingForm({ initialData }: ListingFormProps) {
         );
       }
 
-      const { data: property } = await res.json();
-      // Keep isSubmitting=true so the button stays disabled while navigating,
-      // preventing a second submission before the page changes.
-      router.push(`/dashboard/listings/${property.id}/edit`);
+      await res.json();
+      if (isEdit) {
+        // For edits, just reset the submitting state — we stay on the same page
+        setIsSubmitting(false);
+        setSubmitSuccess("Changes saved successfully.");
+      } else {
+        // New listing created — keep isSubmitting=true while navigating away
+        router.push("/dashboard/listings");
+      }
     } catch (err) {
       setSubmitError(
         err instanceof Error ? err.message : "Something went wrong",

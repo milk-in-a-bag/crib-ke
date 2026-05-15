@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { MessageSquareIcon } from "lucide-react";
 import type { MessageThread } from "@/types";
 import { ThreadList } from "@/components/ThreadList";
@@ -9,15 +9,32 @@ import { ThreadPanel } from "@/components/ThreadPanel";
 interface ThreadViewProps {
   readonly threads: MessageThread[];
   readonly currentUserId: string;
+  readonly perspective?: "seeker" | "owner";
 }
 
-export function ThreadView({ threads, currentUserId }: ThreadViewProps) {
+export function ThreadView({
+  threads,
+  currentUserId,
+  perspective = "seeker",
+}: ThreadViewProps) {
   const [selectedThreadId, setSelectedThreadId] = useState<string | null>(null);
   const [localUnread, setLocalUnread] = useState<Record<string, number>>(() =>
     Object.fromEntries(threads.map((t) => [t.id, t.unread_count ?? 0])),
   );
 
   const selectedThread = threads.find((t) => t.id === selectedThreadId) ?? null;
+
+  // When the owner opens the inbox, mark inbox-level notifications as read:
+  // - new_inquiry notifications (link = /dashboard/inbox)
+  // - legacy new_message notifications (link = /dashboard/inbox, pre thread-specific links)
+  useEffect(() => {
+    if (perspective !== "owner") return;
+    fetch("/api/notifications/mark-inbox-read", { method: "POST" })
+      .then(() => {
+        globalThis.dispatchEvent(new CustomEvent("notifications:refresh"));
+      })
+      .catch(() => {});
+  }, [perspective]);
 
   function handleSelect(threadId: string) {
     setSelectedThreadId(threadId);
@@ -50,12 +67,14 @@ export function ThreadView({ threads, currentUserId }: ThreadViewProps) {
         selectedThreadId={selectedThreadId}
         localUnread={localUnread}
         onSelect={handleSelect}
+        perspective={perspective}
       />
       <ThreadPanel
         thread={selectedThread}
         currentUserId={currentUserId}
         onBack={() => setSelectedThreadId(null)}
         onMarkRead={handleMarkRead}
+        perspective={perspective}
       />
     </div>
   );

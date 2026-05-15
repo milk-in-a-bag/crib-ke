@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   MapPinIcon,
   UserIcon,
@@ -13,6 +14,7 @@ import {
   ChevronRightIcon,
   HomeIcon,
   MailIcon,
+  RefreshCwIcon,
 } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
 import type { AdminQueueListing } from "@/components/AdminReviewCard";
@@ -48,6 +50,7 @@ function formatDate(dateStr: string) {
 }
 
 export function AdminQueueClient({ initialListings }: AdminQueueClientProps) {
+  const router = useRouter();
   const [listings, setListings] = useState(initialListings);
   const [selectedId, setSelectedId] = useState<string | null>(
     initialListings[0]?.id ?? null,
@@ -90,6 +93,11 @@ export function AdminQueueClient({ initialListings }: AdminQueueClientProps) {
       });
       if (!res.ok) {
         const body = await res.json();
+        // If already processed (status transition invalid), remove from queue
+        if (res.status === 400 && body.error?.includes("Invalid status")) {
+          removeAndAdvance(selected.id);
+          return;
+        }
         throw new Error(body.error ?? "Failed to approve listing");
       }
       removeAndAdvance(selected.id);
@@ -111,6 +119,11 @@ export function AdminQueueClient({ initialListings }: AdminQueueClientProps) {
       });
       if (!res.ok) {
         const body = await res.json();
+        // If already processed (status transition invalid), remove from queue
+        if (res.status === 400 && body.error?.includes("Invalid status")) {
+          removeAndAdvance(selected.id);
+          return;
+        }
         throw new Error(body.error ?? "Failed to reject listing");
       }
       removeAndAdvance(selected.id);
@@ -137,10 +150,18 @@ export function AdminQueueClient({ initialListings }: AdminQueueClientProps) {
     <div className="flex gap-6 items-start">
       {/* ── Left: queue list ── */}
       <div className="w-72 shrink-0 bg-white dark:bg-gray-800 rounded-2xl shadow-sm overflow-hidden">
-        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700">
+        <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-700 flex items-center justify-between">
           <p className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">
             Pending ({listings.length})
           </p>
+          <button
+            type="button"
+            onClick={() => router.refresh()}
+            title="Refresh queue"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <RefreshCwIcon className="w-3.5 h-3.5" />
+          </button>
         </div>
         <ul className="divide-y divide-gray-50 dark:divide-gray-700/50">
           {listings.map((l) => (

@@ -16,11 +16,14 @@ export interface DashboardLink {
 /**
  * Builds the ordered list of role-based dashboard links for the navbar.
  * Pure function — no JSX, no side effects, easy to unit-test.
+ *
+ * Note: unreadMessageCount is intentionally unused here — unread counts
+ * are surfaced via the notification bell, not duplicated on nav links.
  */
 export function buildDashboardLinks(
   isAuthenticated: boolean,
   role: UserRole | null,
-  unreadMessageCount: number,
+  _unreadMessageCount: number,
 ): DashboardLink[] {
   if (!isAuthenticated) return [];
 
@@ -35,7 +38,6 @@ export function buildDashboardLinks(
         href: "/dashboard/inbox",
         label: "Inbox",
         iconName: "Inbox",
-        badge: unreadMessageCount > 0 ? unreadMessageCount : undefined,
       },
     ];
   }

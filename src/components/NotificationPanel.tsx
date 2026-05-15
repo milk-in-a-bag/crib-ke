@@ -30,6 +30,11 @@ export function NotificationPanel({
   const [open, setOpen] = useState(false);
   const [notifications, setNotifications] = useState<NotificationRecord[]>([]);
   const [unreadCount, setUnreadCount] = useState(initialUnreadCount);
+
+  // Sync with server-rendered count whenever it changes (e.g. after sign-in refresh)
+  useEffect(() => {
+    setUnreadCount(initialUnreadCount);
+  }, [initialUnreadCount]);
   const [loading, setLoading] = useState(false);
   const [markingAll, setMarkingAll] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
@@ -56,6 +61,23 @@ export function NotificationPanel({
     } finally {
       setLoading(false);
     }
+  }, []);
+
+  // Refresh unread count when a thread is marked read elsewhere (e.g. inbox)
+  useEffect(() => {
+    async function refreshCount() {
+      try {
+        const res = await fetch("/api/notifications?limit=1");
+        if (!res.ok) return;
+        const json = await res.json();
+        setUnreadCount(json.unread_count ?? 0);
+      } catch {
+        // non-critical
+      }
+    }
+    window.addEventListener("notifications:refresh", refreshCount);
+    return () =>
+      window.removeEventListener("notifications:refresh", refreshCount);
   }, []);
 
   function handleToggle() {

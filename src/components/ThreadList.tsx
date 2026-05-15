@@ -8,6 +8,7 @@ interface ThreadListProps {
   readonly selectedThreadId: string | null;
   readonly localUnread: Record<string, number>;
   readonly onSelect: (threadId: string) => void;
+  readonly perspective?: "seeker" | "owner";
 }
 
 export function ThreadList({
@@ -15,6 +16,7 @@ export function ThreadList({
   selectedThreadId,
   localUnread,
   onSelect,
+  perspective = "seeker",
 }: ThreadListProps) {
   return (
     <aside
@@ -24,7 +26,7 @@ export function ThreadList({
     >
       <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700">
         <h1 className="text-xl font-bold text-gray-900 dark:text-white">
-          Messages
+          {perspective === "owner" ? "Inbox" : "Messages"}
         </h1>
       </div>
 
@@ -33,6 +35,10 @@ export function ThreadList({
           const preview = truncate(thread.inquiry_message ?? "", 80);
           const unread = localUnread[thread.id] ?? 0;
           const isSelected = thread.id === selectedThreadId;
+          const otherParty =
+            perspective === "owner"
+              ? (thread.seeker_name ?? "Seeker")
+              : (thread.owner_name ?? "Owner");
 
           return (
             <li key={thread.id}>
@@ -49,7 +55,7 @@ export function ThreadList({
                       {thread.listing_title ?? "Property"}
                     </p>
                     <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
-                      {thread.owner_name ?? "Owner"}
+                      {otherParty}
                     </p>
                     {preview && (
                       <p className="text-sm text-gray-600 dark:text-gray-300 mt-1 line-clamp-2">
