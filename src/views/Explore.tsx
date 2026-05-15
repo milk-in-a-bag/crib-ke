@@ -60,6 +60,18 @@ export function Explore({
     null,
   );
 
+  // Lock body scroll when mobile filter drawer is open
+  useEffect(() => {
+    if (showFilters) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, [showFilters]);
+
   // Silently request location on load — center map if granted
   useEffect(() => {
     if (!navigator.geolocation) return;
@@ -149,7 +161,7 @@ export function Explore({
   );
 
   return (
-    <div className="flex h-[calc(100vh-64px)] mt-16 relative">
+    <div className="flex h-[calc(100vh-64px)] relative">
       {/* Desktop sidebar - always visible */}
       <div className="hidden lg:block shrink-0">
         <FilterSidebar onFilterChange={handleFilterChange} />
@@ -160,14 +172,14 @@ export function Explore({
         {showFilters && (
           <>
             <motion.div
-              className="fixed inset-0 bg-black/50 z-40 lg:hidden"
+              className="fixed inset-0 bg-black/50 z-[999] lg:hidden"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowFilters(false)}
             />
             <motion.div
-              className="fixed left-0 top-0 bottom-0 z-50 lg:hidden"
+              className="fixed left-0 top-0 bottom-0 z-[1000] lg:hidden"
               initial={{ x: "-100%" }}
               animate={{ x: 0 }}
               exit={{ x: "-100%" }}
@@ -187,7 +199,14 @@ export function Explore({
         )}
       </AnimatePresence>
 
-      <div className="flex-1 flex flex-col min-w-0">
+      <div
+        className="flex-1 flex flex-col min-w-0"
+        style={
+          showFilters
+            ? { pointerEvents: "none", userSelect: "none" }
+            : undefined
+        }
+      >
         {/* Top bar */}
         <div className="bg-white border-b border-slate-200 px-3 sm:px-6 py-3 sm:py-4 flex items-center space-x-2 sm:space-x-4">
           <button
