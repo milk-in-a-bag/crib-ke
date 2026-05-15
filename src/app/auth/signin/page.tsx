@@ -1,14 +1,46 @@
-import { signIn } from "@/auth";
-import { AuthError } from "next-auth";
-import { redirect } from "next/navigation";
+"use client";
 
-interface SignInPageProps {
-  searchParams: Promise<{ callbackUrl?: string; error?: string }>;
-}
+import { useState } from "react";
+import { signIn } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import Link from "next/link";
 
-export default async function SignInPage({ searchParams }: SignInPageProps) {
-  const { callbackUrl, error } = await searchParams;
-  const redirectTo = callbackUrl ?? "/";
+export default function SignInPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/dashboard";
+  const urlError = searchParams.get("error");
+
+  const [error, setError] = useState<string | null>(
+    urlError === "CredentialsSignin" ? "Invalid email or password." : null,
+  );
+  const [loading, setLoading] = useState(false);
+
+  async function handleSubmit(e: React.SyntheticEvent<HTMLFormElement>) {
+    e.preventDefault();
+    setError(null);
+    setLoading(true);
+
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const result = await signIn("credentials", {
+      email,
+      password,
+      redirect: false,
+    });
+
+    if (result?.error) {
+      setError("Invalid email or password.");
+      setLoading(false);
+      return;
+    }
+
+    // Force the server components (Navbar, etc.) to re-render with the new session
+    router.refresh();
+    router.push(callbackUrl);
+  }
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
@@ -22,32 +54,11 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
 
         {error && (
           <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
-            {error === "CredentialsSignin"
-              ? "Invalid email or password."
-              : "Something went wrong. Please try again."}
+            {error}
           </div>
         )}
 
-        <form
-          action={async (formData: FormData) => {
-            "use server";
-            try {
-              await signIn("credentials", {
-                email: formData.get("email"),
-                password: formData.get("password"),
-                redirectTo,
-              });
-            } catch (err) {
-              if (err instanceof AuthError) {
-                redirect(
-                  `/auth/signin?error=${err.type}&callbackUrl=${encodeURIComponent(redirectTo)}`,
-                );
-              }
-              throw err;
-            }
-          }}
-          className="space-y-4"
-        >
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label
               htmlFor="email"
@@ -84,20 +95,21 @@ export default async function SignInPage({ searchParams }: SignInPageProps) {
           </div>
           <button
             type="submit"
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl py-2.5 text-sm transition-colors"
+            disabled={loading}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl py-2.5 text-sm transition-colors disabled:opacity-60"
           >
-            Sign in
+            {loading ? "Signing in…" : "Sign in"}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500">
           Don&apos;t have an account?{" "}
-          <a
+          <Link
             href="/auth/signup"
             className="text-blue-600 hover:underline font-medium"
           >
             Sign up
-          </a>
+          </Link>
         </p>
       </div>
     </main>

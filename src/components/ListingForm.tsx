@@ -547,7 +547,7 @@ export function ListingForm({ initialData }: ListingFormProps) {
           </div>
 
           <div className="flex gap-3">
-            {canSubmitForReview && step === STEPS.length - 1 && (
+            {canSubmitForReview && !submitSuccess && (
               <button
                 type="button"
                 onClick={handleSubmitForReview}

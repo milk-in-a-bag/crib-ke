@@ -42,3 +42,9 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* When the mobile filter drawer is open, hide all Leaflet UI controls
+   so they don't paint over the drawer regardless of their inline z-index */
+body.filters-open .leaflet-control-container {
+  visibility: hidden !important;
+}

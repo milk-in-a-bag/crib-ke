@@ -60,15 +60,18 @@ export function Explore({
     null,
   );
 
-  // Lock body scroll when mobile filter drawer is open
+  // Lock body scroll and hide Leaflet controls when mobile filter drawer is open
   useEffect(() => {
     if (showFilters) {
       document.body.style.overflow = "hidden";
+      document.body.classList.add("filters-open");
     } else {
       document.body.style.overflow = "";
+      document.body.classList.remove("filters-open");
     }
     return () => {
       document.body.style.overflow = "";
+      document.body.classList.remove("filters-open");
     };
   }, [showFilters]);
 

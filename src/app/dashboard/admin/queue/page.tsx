@@ -22,14 +22,24 @@ export default async function AdminQueuePage() {
     SELECT
       p.id,
       p.title,
+      p.description,
       p.type,
       p.price,
       p.price_type,
       p.neighborhood,
       p.location,
+      p.bedrooms,
+      p.bathrooms,
+      p.sqft,
+      p.amenities,
       p.images,
+      p.latitude,
+      p.longitude,
+      p.availability_status,
       p.created_at,
-      COALESCE(u.name, u.email, 'Unknown') AS owner_name
+      u.id AS owner_id,
+      COALESCE(u.name, u.email, 'Unknown') AS owner_name,
+      u.email AS owner_email
     FROM properties p
     LEFT JOIN users u ON u.id = p.owner_id
     WHERE p.listing_status = 'pending_review'
@@ -41,13 +51,23 @@ export default async function AdminQueuePage() {
     (r: Record<string, unknown>) => ({
       id: r.id as string,
       title: r.title as string,
+      description: (r.description as string) ?? "",
       type: r.type as AdminQueueListing["type"],
       price: Number(r.price),
       price_type: r.price_type as AdminQueueListing["price_type"],
       neighborhood: r.neighborhood as string,
       location: r.location as string,
+      bedrooms: Number(r.bedrooms ?? 0),
+      bathrooms: Number(r.bathrooms ?? 0),
+      sqft: r.sqft ? Number(r.sqft) : null,
+      amenities: (r.amenities as string[]) ?? [],
       images: (r.images as string[]) ?? [],
+      latitude: Number(r.latitude),
+      longitude: Number(r.longitude),
+      availability_status: r.availability_status as string,
+      owner_id: r.owner_id as string,
       owner_name: r.owner_name as string,
+      owner_email: (r.owner_email as string) ?? "",
       created_at: r.created_at as string,
     }),
   );
